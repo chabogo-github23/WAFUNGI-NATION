@@ -67,7 +67,7 @@
                                 {% endif %}
                                 <tr>
                                     <th>Service Fee</th>
-                                    <td>${{ booking.total_amount|multiply:0.1|floatformat:2 }}</td>
+                                    <td>{{ booking.total_amount|multiply:0.1 }}</td>
                                 </tr>
                                 <tr class="table-primary">
                                     <th>Total Amount</th>
@@ -78,73 +78,65 @@
                     </div>
                     
                     <!-- Payment Form -->
-                    <form method="post" id="payment-form">
-                        {% csrf_token %}
-                        
-                        <h5 class="mb-3">Payment Method</h5>
-                        
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa" checked>
+                            <label class="form-check-label" for="mpesa">
+                                <i class="fas fa-mobile-alt me-2 text-success"></i>
+                                M-Pesa
+                                <small class="text-muted d-block">Pay via M-Pesa mobile money</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="credit-card" value="card">
+                            <label class="form-check-label" for="credit-card">
+                                <i class="fab fa-cc-visa me-2"></i>
+                                <i class="fab fa-cc-mastercard me-2"></i>
+                                Credit/Debit Card
+                                <small class="text-muted d-block">Visa, Mastercard accepted</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="bank-transfer" value="bank_transfer">
+                            <label class="form-check-label" for="bank-transfer">
+                                <i class="fas fa-university me-2"></i>
+                                Bank Transfer
+                                <small class="text-muted d-block">Direct bank transfer</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- M-Pesa Form -->
+                    <div id="mpesa-form" class="border rounded p-3 mb-4">
                         <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" id="credit-card" value="credit-card" checked>
-                                <label class="form-check-label" for="credit-card">
-                                    <i class="fab fa-cc-visa me-2"></i>
-                                    <i class="fab fa-cc-mastercard me-2"></i>
-                                    <i class="fab fa-cc-amex me-2"></i>
-                                    Credit/Debit Card
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
-                                <label class="form-check-label" for="paypal">
-                                    <i class="fab fa-paypal me-2"></i>
-                                    PayPal
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa">
-                                <label class="form-check-label" for="mpesa">
-                                    <i class="fas fa-mobile-alt me-2"></i>
-                                    M-Pesa
-                                </label>
-                            </div>
+                            <label for="mpesa-number" class="form-label">M-Pesa Phone Number</label>
+                            <input type="tel" class="form-control" id="mpesa-number" placeholder="254712345678">
+                            <div class="form-text">Enter your M-Pesa registered phone number</div>
                         </div>
-                        
-                        <!-- Credit Card Form (Simulated) -->
-                        <div id="credit-card-form" class="border rounded p-3 mb-4">
-                            <div class="mb-3">
-                                <label for="card-name" class="form-label">Name on Card</label>
-                                <input type="text" class="form-control" id="card-name" placeholder="John Doe">
-                            </div>
-                            <div class="mb-3">
-                                <label for="card-number" class="form-label">Card Number</label>
-                                <input type="text" class="form-control" id="card-number" placeholder="1234 5678 9012 3456">
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="expiry-date" class="form-label">Expiry Date</label>
-                                    <input type="text" class="form-control" id="expiry-date" placeholder="MM/YY">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="cvv" class="form-label">CVV</label>
-                                    <input type="text" class="form-control" id="cvv" placeholder="123">
-                                </div>
-                            </div>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                You will receive an M-Pesa prompt on your phone to complete the payment.
+                            </small>
                         </div>
+                    </div>
+
+                    <!-- Update the payment button -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Pay KSH {{ booking.total_amount|floatformat:0 }}
+                        </button>
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+
                         
                         <div class="form-check mb-4">
                             <input class="form-check-input" type="checkbox" id="terms" required>
                             <label class="form-check-label" for="terms">
                                 I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Payment Policy</a>
                             </label>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Pay {{ booking.total_amount|ksh_currency }}
-                            </button>
-                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
-                                Cancel
-                            </a>
                         </div>
                     </form>
                 </div>

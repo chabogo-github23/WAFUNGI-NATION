@@ -113,11 +113,11 @@
                                     {% endif %}
                                     <tr>
                                         <th>Service Fee</th>
-                                        <td>${{ booking.total_amount|multiply:0.1|floatformat:2 }}</td>
+                                        <td>{{ booking.total_amount|multiply:0.1|floatformat:2 }}</td>
                                     </tr>
                                     <tr class="table-primary">
                                         <th>Total Amount</th>
-                                        <td class="fw-bold">${{ booking.total_amount }}</td>
+                                        <td class="fw-bold">{{ booking.total_amount|ksh_currency }}</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -249,6 +249,19 @@
                                 </span>
                             </div>
                             <small class="text-muted">{{ booking.total_amount|ksh_currency }} - {{ booking.start_date|date:"M d" }}</small>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <form method="post" action="{% url 'confirm_booking' booking.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Confirm</button>
+                                    </form>
+                                {% elif booking.status == 'confirmed' and not booking.payment_status and booking.client == user %}
+                                    <a href="{% url 'payment_process' booking.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-credit-card"></i> Pay Now
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -325,7 +338,7 @@
                                     <tr>
                                         <td>{{ instrument.instrument.name }}</td>
                                         <td>{{ instrument.brand }} {{ instrument.model }}</td>
-                                        <td>${{ instrument.daily_rate }}</td>
+                                        <td>{{ instrument.daily_rate|ksh_currency }}</td>
                                         <td>
                                             <span class="badge bg-{% if instrument.is_available %}success{% else %}danger{% endif %}">
                                                 {% if instrument.is_available %}Available{% else %}Rented{% endif %}
@@ -363,7 +376,7 @@
                                 </span>
                             </div>
                             <small class="text-muted">
-                                {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }} - ${{ booking.total_amount }}
+                                {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }} - {{ booking.total_amount|ksh_currency }}
                             </small>
                         </div>
                         {% endfor %}

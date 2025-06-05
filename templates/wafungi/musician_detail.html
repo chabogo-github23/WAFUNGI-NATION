@@ -34,7 +34,7 @@
                     </div>
                     
                     <div class="d-flex justify-content-center mb-3">
-                        <span class="badge bg-success fs-6">${{ musician.hourly_rate }}/hr</span>
+                        <span class="badge bg-success fs-6">{{ musician.hourly_rate|ksh_currency }}/hr</span>
                     </div>
                     
                     {% if can_book %}

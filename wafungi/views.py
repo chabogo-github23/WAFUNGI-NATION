@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from .models import *
 from .forms import *
 import json
+from decimal import Decimal
 
 def home(request):
     """Homepage with search functionality"""
@@ -209,8 +210,9 @@ def book_musician(request, musician_id):
             
             # Calculate total amount
             duration = booking.end_date - booking.start_date
-            hours = duration.total_seconds() / 3600
-            booking.total_amount = musician.hourly_rate * hours
+            total_seconds = Decimal(str(duration.total_seconds()))
+            hours = total_seconds / Decimal('3600')
+            booking.total_amount = musician.hourly_rate * hours 
             
             booking.save()
             
@@ -333,22 +335,57 @@ def confirm_booking(request, booking_id):
 
 @login_required
 def payment_process(request, booking_id):
-    """Process payment for booking"""
+    """Process payment for booking with multiple payment options"""
     booking = get_object_or_404(Booking, id=booking_id, client=request.user)
     
+    if booking.payment_status:
+        messages.info(request, 'This booking has already been paid for.')
+        return redirect('booking_detail', booking.id)
+    
     if request.method == 'POST':
+        payment_method = request.POST.get('payment_method')
         
-        booking.payment_status = True
-        booking.save()
+        # Simulate different payment methods
+        if payment_method == 'mpesa':
+            # M-Pesa integration would go here
+            # For now, we'll simulate success
+            booking.payment_status = True
+            booking.save()
+            
+            # Create notification
+            Notification.objects.create(
+                user=booking.musician or booking.instrument_listing.owner,
+                title='Payment Received',
+                message=f'Payment of KSH {booking.total_amount} has been received for booking #{booking.id}.'
+            )
+            
+            messages.success(request, 'Payment processed successfully via M-Pesa!')
+            
+        elif payment_method == 'card':
+            # Credit card processing would go here
+            booking.payment_status = True
+            booking.save()
+            
+            Notification.objects.create(
+                user=booking.musician or booking.instrument_listing.owner,
+                title='Payment Received',
+                message=f'Payment of KSH {booking.total_amount} has been received for booking #{booking.id}.'
+            )
+            
+            messages.success(request, 'Payment processed successfully via card!')
+            
+        elif payment_method == 'bank_transfer':
+            # Bank transfer processing would go here
+            # This might require manual verification
+            messages.info(request, 'Bank transfer details sent. Payment will be verified within 24 hours.')
+            
+        return redirect('booking_detail', booking.id)
+    
+    context = {
+        'booking': booking,
+        'service_fee': booking.total_amount * 0.1,  # 10% service fee
+    }
         
-        # Create notification
-        Notification.objects.create(
-            user=booking.musician,
-            title='Payment Received',
-            message=f'Payment of ${booking.total_amount} has been received for your booking.'
-        )
-        
-        messages.success(request, 'Payment processed successfully!')
-        return redirect('dashboard')
+
     
     return render(request, 'wafungi/payment.html', {'booking': booking})
