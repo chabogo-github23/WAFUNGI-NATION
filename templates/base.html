@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WAFUNGI-NATION - Music Talent Platform{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #3498db;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 80px 0;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .musician-card img {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .rating {
+            color: #ffc107;
+        }
+        
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 50px;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-music"></i> WAFUNGI-NATION
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'search_musicians' %}">Find Musicians</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'search_instruments' %}">Rent Instruments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'browse_events' %}">Browse Events</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-badge" id="notificationCount">0</span>
+                            </a>
+                            <ul class="dropdown-menu" id="notificationList">
+                                <li><span class="dropdown-item-text">Loading...</span></li>
+                            </ul>
+                        </li>
+                        
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture.url }}" alt="Profile" class="rounded-circle" width="30" height="30">
+                                {% else %}
+                                    <i class="fas fa-user-circle"></i>
+                                {% endif %}
+                                {{ user.get_full_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                {% if user.user_type == 'organizer' %}
+                                    <li><a class="dropdown-item" href="{% url 'create_event' %}"><i class="fas fa-plus"></i> Create Event</a></li>
+                                {% endif %}
+                                {% if user.user_type == 'instrument_owner' %}
+                                    <li><a class="dropdown-item" href="{% url 'add_instrument' %}"><i class="fas fa-plus"></i> List Instrument</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item" style="border: none; background: none; text-align: left; width: 100%;">
+                                            <i class="fas fa-sign-out-alt"></i> Logout
+                                        </button> 
+                                    ></form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary ms-2" href="{% url 'register' %}">Join Now</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-music"></i> WAFUNGI-NATION</h5>
+                    <p>Connecting musicians, event organizers, and instrument owners in one comprehensive platform.</p>
+                </div>
+                <div class="col-md-2">
+                    <h6>Platform</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'search_musicians' %}" class="text-light">Find Musicians</a></li>
+                        <li><a href="{% url 'search_instruments' %}" class="text-light">Rent Instruments</a></li>
+                        <li><a href="{% url 'browse_events' %}" class="text-light">Browse Events</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    <h6>Account</h6>
+                    <ul class="list-unstyled">
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'dashboard' %}" class="text-light">Dashboard</a></li>
+                            <li><a href="{% url 'logout' %}" class="text-light">Logout</a></li>
+                        {% else %}
+                            <li><a href="{% url 'login' %}" class="text-light">Login</a></li>
+                            <li><a href="{% url 'register' %}" class="text-light">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Contact</h6>
+                    <p><i class="fas fa-envelope"></i> calebchabogo@gmail.com.com</p>
+                    <p><i class="fas fa-phone"></i> +254 793706728</p>
+                    <div class="social-links">
+                        <a href="#" class="text-light me-3"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-light"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; 2025 WAFUNGI-NATION. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="#" class="text-light me-3">Privacy Policy</a>
+                    <a href="#" class="text-light">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        function loadNotifications() {
+            {% if user.is_authenticated %}
+            fetch('/api/notifications/')
+                .then(response => response.json())
+                .then(data => {
+                    const count = document.getElementById('notificationCount');
+                    const list = document.getElementById('notificationList');
+                    
+                    count.textContent = data.unread_count;
+                    count.style.display = data.unread_count > 0 ? 'flex' : 'none';
+                    
+                    if (data.notifications.length > 0) {
+                        list.innerHTML = data.notifications.map(notification => 
+                            `<li><a class="dropdown-item ${!notification.is_read ? 'fw-bold' : ''}" href="#" onclick="markAsRead(${notification.id})">
+                                <small class="text-muted">${notification.created_at}</small><br>
+                                ${notification.title}
+                            </a></li>`
+                        ).join('');
+                    } else {
+                        list.innerHTML = '<li><span class="dropdown-item-text">No notifications</span></li>';
+                    }
+                });
+            {% endif %}
+        }
+        
+        function markAsRead(notificationId) {
+            fetch(`/api/mark-notification-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(() => loadNotifications());
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+        
+        // Refresh notifications every 30 seconds
+        setInterval(loadNotifications, 30000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

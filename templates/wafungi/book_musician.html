@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}Book {{ musician.stage_name|default:musician.user.get_full_name }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'search_musicians' %}">Musicians</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'musician_detail' musician.id %}">{{ musician.stage_name|default:musician.user.get_full_name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Book</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Booking Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Book {{ musician.stage_name|default:musician.user.get_full_name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.start_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.end_date|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes|as_crispy_field }}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6>Booking Details:</h6>
+                            <ul class="mb-0">
+                                <li>Hourly Rate: {{ musician.hourly_rate|ksh_currency }}</li>
+                                <li>Total will be calculated based on the duration</li>
+                                <li>Payment will be processed after booking confirmation</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Send Booking Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Musician Summary -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if musician.user.profile_picture %}
+                            <img src="{{ musician.user.profile_picture.url }}" class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="{{ musician.stage_name }}">
+                        {% else %}
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                                <i class="fas fa-user-circle fa-4x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <h5 class="mt-2">{{ musician.stage_name|default:musician.user.get_full_name }}</h5>
+                        <div class="rating">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= musician.rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-muted">({{ musician.rating|floatformat:1 }})</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Genres:</h6>
+                        <div>
+                            {% for genre in musician.genres.all %}
+                                <span class="badge bg-secondary me-1 mb-1">{{ genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Instruments:</h6>
+                        <div>
+                            {% for instrument in musician.instruments.all %}
+                                <span class="badge bg-info me-1 mb-1">{{ instrument.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Location:</h6>
+                        <p class="mb-0">{{ musician.user.location|default:"Not specified" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Experience:</h6>
+                        <p class="mb-0">{{ musician.experience_years }} years</p>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <h6>Rate:</h6>
+                        <p class="mb-0 fw-bold">{{ musician.hourly_rate|ksh_currency }}/hour</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

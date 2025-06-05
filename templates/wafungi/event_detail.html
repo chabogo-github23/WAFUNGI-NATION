@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% block title %}{{ event.title }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'browse_events' %}">Events</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ event.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Event Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ event.title }}</h4>
+                    <span class="badge bg-info">{{ event.event_type|title }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p>{{ event.description }}</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Event Details</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-calendar me-2"></i> <strong>Date:</strong> {{ event.date|date:"F d, Y" }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock me-2"></i> <strong>Time:</strong> {{ event.date|date:"g:i A" }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-hourglass-half me-2"></i> <strong>Duration:</strong> {{ event.duration_hours }} hours
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-map-marker-alt me-2"></i> <strong>Location:</strong> {{ event.location }}
+                                </li>
+                                <li>
+                                    <i class="fas fa-users me-2"></i> <strong>Musicians Needed:</strong> {{ event.musicians_needed }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Budget</h5>
+                            <div class="alert alert-success">
+                                <h6 class="mb-0">{{ event.budget_min|ksh_currency }} - {{ event.budget_max|ksh_currency }}</h6>
+                            </div>
+                            
+                            <h5 class="mt-3">Required Genres</h5>
+                            <div>
+                                {% for genre in event.required_genres.all %}
+                                    <span class="badge bg-secondary me-1 mb-1">{{ genre.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">Any genre</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <h5 class="mt-3">Required Instruments</h5>
+                            <div>
+                                {% for instrument in event.required_instruments.all %}
+                                    <span class="badge bg-info me-1 mb-1">{{ instrument.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">Any instrument</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated and user.user_type == 'musician' %}
+                        <div class="alert alert-info">
+                            <h6>Interested in this event?</h6>
+                            <p>If you're available and match the requirements, you can apply to perform at this event.</p>
+                            <a href="#" class="btn btn-primary">Apply Now</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Organizer Info -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Organizer</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if event.organizer.profile_picture %}
+                            <img src="{{ event.organizer.profile_picture.url }}" class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="{{ event.organizer.get_full_name }}">
+                        {% else %}
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                                <i class="fas fa-user-circle fa-4x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <h5 class="mt-2">{{ event.organizer.get_full_name|default:event.organizer.username }}</h5>
+                        <p class="text-muted">{{ event.organizer.get_user_type_display }}</p>
+                    </div>
+                    
+                    {% if event.organizer.bio %}
+                        <div class="mb-3">
+                            <h6>About:</h6>
+                            <p class="mb-0">{{ event.organizer.bio|truncatewords:30 }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <h6>Location:</h6>
+                        <p class="mb-0">{{ event.organizer.location|default:"Not specified" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Member Since:</h6>
+                        <p class="mb-0">{{ event.organizer.date_joined|date:"F Y" }}</p>
+                    </div>
+                    
+                    {% if user.is_authenticated and user != event.organizer %}
+                        <a href="#" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-envelope"></i> Contact Organizer
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Status</span>
+                            <span class="badge bg-{% if event.is_active %}success{% else %}secondary{% endif %}">
+                                {% if event.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Posted</span>
+                            <span>{{ event.created_at|timesince }} ago</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Applications</span>
+                            <span>0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

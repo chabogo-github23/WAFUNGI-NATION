@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% block title %}Rent Instruments - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Rent Instruments</h1>
+                {% if user.is_authenticated and user.user_type == 'instrument_owner' %}
+                    <a href="{% url 'add_instrument' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> List Your Instrument
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="{% url 'search_instruments' %}">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Search</label>
+                                <input type="text" name="q" class="form-control" placeholder="Brand, model, etc." value="{{ current_filters.q|default:'' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Instrument Type</label>
+                                <select name="instrument" class="form-select">
+                                    <option value="">All Types</option>
+                                    {% for instrument in instrument_types %}
+                                        <option value="{{ instrument.id }}" {% if current_filters.instrument == instrument.id|stringformat:"i" %}selected{% endif %}>
+                                            {{ instrument.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Condition</label>
+                                <select name="condition" class="form-select">
+                                    <option value="">Any</option>
+                                    {% for value, label in conditions %}
+                                        <option value="{{ value }}" {% if current_filters.condition == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Location</label>
+                                <input type="text" name="location" class="form-control" placeholder="City, Country" value="{{ current_filters.location|default:'' }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Max Daily Rate</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"></span>
+                                    <input type="number" name="max_rate" class="form-control" placeholder="Max" value="{{ current_filters.max_rate|default:'' }}">
+                                </div>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'search_instruments' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="row g-4">
+        {% if page_obj %}
+            {% for instrument in page_obj %}
+                <div class="col-md-4 col-lg-3">
+                    <div class="card h-100">
+                        {% if instrument.image %}
+                            <img src="{{ instrument.image.url }}" class="card-img-top" alt="{{ instrument.brand }} {{ instrument.model }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-guitar fa-5x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ instrument.brand }} {{ instrument.model }}</h5>
+                            <p class="card-text mb-2">
+                                <span class="badge bg-primary">{{ instrument.instrument.name }}</span>
+                                <span class="badge bg-{% if instrument.condition == 'excellent' %}success{% elif instrument.condition == 'good' %}info{% elif instrument.condition == 'fair' %}warning{% else %}danger{% endif %}">
+                                    {{ instrument.get_condition_display }}
+                                </span>
+                            </p>
+                            <p class="card-text">{{ instrument.description|truncatewords:15 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-primary">${{ instrument.daily_rate }}/day</span>
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ instrument.location }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'instrument_detail' instrument.id %}" class="btn btn-primary w-100">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <div class="col-12">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in current_filters.items %}{% if value and key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-guitar fa-3x text-muted mb-3"></i>
+                <h3>No instruments found</h3>
+                <p class="text-muted">Try adjusting your search filters or check back later.</p>
+                {% if user.is_authenticated and user.user_type == 'instrument_owner' %}
+                    <a href="{% url 'add_instrument' %}" class="btn btn-primary">List Your Instrument</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

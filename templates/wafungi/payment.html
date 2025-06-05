@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% block title %}Payment - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'booking_detail' booking.id %}">Booking #{{ booking.id }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Payment</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Payment for Booking #{{ booking.id }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Payment Summary</h5>
+                        <p class="mb-0">You are about to make a payment for your booking with 
+                            {% if booking.musician %}
+                                {{ booking.musician.get_full_name|default:booking.musician.username }}
+                            {% elif booking.instrument_listing %}
+                                {{ booking.instrument_listing.owner.get_full_name|default:booking.instrument_listing.owner.username }} for {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 40%;">Booking ID</th>
+                                    <td>#{{ booking.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date</th>
+                                    <td>{{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</td>
+                                </tr>
+                                {% if booking.musician %}
+                                    <tr>
+                                        <th>Musician</th>
+                                        <td>{{ booking.musician.get_full_name|default:booking.musician.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Hourly Rate</th>
+                                        <td>{{ booking.musician.musicianprofile.hourly_rate|ksh_currency }}</td>
+                                    </tr>
+                                {% elif booking.instrument_listing %}
+                                    <tr>
+                                        <th>Instrument</th>
+                                        <td>{{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Rate</th>
+                                        <td>{{ booking.instrument_listing.daily_rate|ksh_currency }}</td>
+                                    </tr>
+                                {% endif %}
+                                <tr>
+                                    <th>Service Fee</th>
+                                    <td>${{ booking.total_amount|multiply:0.1|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th>Total Amount</th>
+                                    <td class="fw-bold">{{ booking.total_amount|ksh_currency }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Payment Form -->
+                    <form method="post" id="payment-form">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Payment Method</h5>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="credit-card" value="credit-card" checked>
+                                <label class="form-check-label" for="credit-card">
+                                    <i class="fab fa-cc-visa me-2"></i>
+                                    <i class="fab fa-cc-mastercard me-2"></i>
+                                    <i class="fab fa-cc-amex me-2"></i>
+                                    Credit/Debit Card
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
+                                <label class="form-check-label" for="paypal">
+                                    <i class="fab fa-paypal me-2"></i>
+                                    PayPal
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa">
+                                <label class="form-check-label" for="mpesa">
+                                    <i class="fas fa-mobile-alt me-2"></i>
+                                    M-Pesa
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Credit Card Form (Simulated) -->
+                        <div id="credit-card-form" class="border rounded p-3 mb-4">
+                            <div class="mb-3">
+                                <label for="card-name" class="form-label">Name on Card</label>
+                                <input type="text" class="form-control" id="card-name" placeholder="John Doe">
+                            </div>
+                            <div class="mb-3">
+                                <label for="card-number" class="form-label">Card Number</label>
+                                <input type="text" class="form-control" id="card-number" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="expiry-date" class="form-label">Expiry Date</label>
+                                    <input type="text" class="form-control" id="expiry-date" placeholder="MM/YY">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="cvv" class="form-label">CVV</label>
+                                    <input type="text" class="form-control" id="cvv" placeholder="123">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Payment Policy</a>
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Pay {{ booking.total_amount|ksh_currency }}
+                            </button>
+                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Simple form validation and payment method toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentForm = document.getElementById('payment-form');
+        const creditCardForm = document.getElementById('credit-card-form');
+        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+        
+        // Toggle payment method forms
+        paymentMethods.forEach(method => {
+            method.addEventListener('change', function() {
+                if (this.value === 'credit-card') {
+                    creditCardForm.style.display = 'block';
+                } else {
+                    creditCardForm.style.display = 'none';
+                }
+            });
+        });
+        
+        // Form submission (simulated)
+        paymentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Simulate payment processing
+            setTimeout(() => {
+                // Submit the form for real
+                this.submit();
+            }, 2000);
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

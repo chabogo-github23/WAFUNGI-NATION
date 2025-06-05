@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}Create Event - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'browse_events' %}">Events</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create Event</li>
+                </ol>
+            </nav>
+            <h1>Create a New Event</h1>
+            <p class="text-muted">Post your event details to find the perfect musicians for your occasion.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.title|as_crispy_field }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description|as_crispy_field }}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.event_type|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.date|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.duration_hours|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.budget_min|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.budget_max|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.location|as_crispy_field }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.musicians_needed|as_crispy_field }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Required Genres</label>
+                            <div class="border rounded p-3">
+                                {{ form.required_genres|as_crispy_field }}
+                            </div>
+                            <div class="form-text">Select the genres that are relevant for your event (optional)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Required Instruments</label>
+                            <div class="border rounded p-3">
+                                {{ form.required_instruments|as_crispy_field }}
+                            </div>
+                            <div class="form-text">Select the instruments that are needed for your event (optional)</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Event</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Tips for Creating Events</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Be specific</strong> about your event requirements
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Set a realistic budget</strong> based on market rates
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Provide clear details</strong> about the venue and equipment
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Specify the genres</strong> that fit your event's atmosphere
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>List all instruments</strong> you need for your event
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

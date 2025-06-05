@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% block title %}{{ musician.stage_name|default:musician.user.get_full_name }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Musician Profile -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="text-center p-3">
+                    {% if musician.user.profile_picture %}
+                        <img src="{{ musician.user.profile_picture.url }}" class="rounded-circle img-thumbnail" style="width: 180px; height: 180px; object-fit: cover;" alt="{{ musician.stage_name }}">
+                    {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style="width: 180px; height: 180px;">
+                            <i class="fas fa-user-circle fa-7x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h3 class="mt-3">{{ musician.stage_name|default:musician.user.get_full_name }}</h3>
+                    <p class="text-muted">
+                        <i class="fas fa-map-marker-alt"></i> {{ musician.user.location|default:"Location not specified" }}
+                    </p>
+                    
+                    <div class="rating mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= musician.rating %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="text-muted">({{ musician.rating|floatformat:1 }})</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center mb-3">
+                        <span class="badge bg-success fs-6">${{ musician.hourly_rate }}/hr</span>
+                    </div>
+                    
+                    {% if can_book %}
+                        <a href="{% url 'book_musician' musician.id %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-calendar-check"></i> Book Now
+                        </a>
+                    {% endif %}
+                    
+                    {% if musician.portfolio_url %}
+                        <a href="{{ musician.portfolio_url }}" target="_blank" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-external-link-alt"></i> Portfolio
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body border-top">
+                    <h5>About</h5>
+                    <p>{{ musician.user.bio|default:"No bio provided." }}</p>
+                    
+                    <h5>Experience</h5>
+                    <p>{{ musician.experience_years }} years</p>
+                    
+                    <h5>Genres</h5>
+                    <div>
+                        {% for genre in musician.genres.all %}
+                            <span class="badge bg-secondary me-1 mb-1">{{ genre.name }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <h5 class="mt-3">Instruments</h5>
+                    <div>
+                        {% for instrument in musician.instruments.all %}
+                            <span class="badge bg-info me-1 mb-1">{{ instrument.name }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <h5 class="mt-3">Stats</h5>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6>{{ musician.total_gigs }}</h6>
+                            <small class="text-muted">Gigs Completed</small>
+                        </div>
+                        <div class="col-6">
+                            <h6>{{ reviews.count }}</h6>
+                            <small class="text-muted">Reviews</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Music Samples and Reviews -->
+        <div class="col-md-8">
+            <!-- Music Sample -->
+            {% if musician.sample_audio %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Music Sample</h5>
+                    </div>
+                    <div class="card-body">
+                        <audio controls class="w-100">
+                            <source src="{{ musician.sample_audio.url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Reviews -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Reviews</h5>
+                    <span class="badge bg-primary">{{ reviews.count }} Reviews</span>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                        {% for review in reviews %}
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>{{ review.reviewer.get_full_name|default:review.reviewer.username }}</strong>
+                                        <small class="text-muted ms-2">{{ review.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <div class="rating">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <p class="mb-0">{{ review.comment }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-alt fa-3x text-muted mb-3"></i>
+                            <h5>No Reviews Yet</h5>
+                            <p class="text-muted">This musician hasn't received any reviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% load wafungi_filters %}
+
+{% block title %}Dashboard - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
+                <span class="badge bg-primary fs-6">{{ user.get_user_type_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Musician Dashboard -->
+    {% if user.user_type == 'musician' %}
+    <div class="row g-4">
+        <!-- Profile Stats -->
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                    <h4>{{ profile.rating|floatformat:1 }}</h4>
+                    <p class="text-muted">Rating</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-music fa-2x text-primary mb-2"></i>
+                    <h4>{{ profile.total_gigs }}</h4>
+                    <p class="text-muted">Total Gigs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
+                    <h4>${{ total_earnings|floatformat:0 }}</h4>
+                    <p class="text-muted">Total Earnings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                    <h4>${{ profile.hourly_rate }}</h4>
+                    <p class="text-muted">Hourly Rate</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Bookings -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Bookings</h5>
+                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_bookings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Client</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in recent_bookings %}
+                                    <tr>
+                                        <td>{{ booking.client.get_full_name|default:booking.client.username }}</td>
+                                        <td>{{ booking.start_date|date:"M d, Y" }}</td>
+                                        <td>{{ booking.total_amount|ksh_currency }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if booking.status == 'pending' %}
+                                                <form method="post" action="{% url 'confirm_booking' booking.id %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-success">Confirm</button>
+                                                </form>
+                                            {% endif %}
+                                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No bookings yet. Your profile is live and ready for bookings!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Status -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Profile Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Availability</span>
+                            <span class="badge bg-{% if profile.availability_status %}success{% else %}danger{% endif %}">
+                                {% if profile.availability_status %}Available{% else %}Unavailable{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Profile Verification</span>
+                            <span class="badge bg-{% if user.is_verified %}success{% else %}warning{% endif %}">
+                                {% if user.is_verified %}Verified{% else %}Pending{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Genres:</small><br>
+                        {% for genre in profile.genres.all %}
+                            <span class="badge bg-secondary me-1">{{ genre.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Instruments:</small><br>
+                        {% for instrument in profile.instruments.all %}
+                            <span class="badge bg-info me-1">{{ instrument.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'profile_setup' %}" class="btn btn-primary w-100">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Organizer Dashboard -->
+    {% elif user.user_type == 'organizer' %}
+    <div class="row g-4">
+        <!-- Quick Stats -->
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                    <h4>{{ my_events.count }}</h4>
+                    <p class="text-muted">My Events</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-handshake fa-2x text-success mb-2"></i>
+                    <h4>{{ my_bookings.count }}</h4>
+                    <p class="text-muted">Total Bookings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h4>{{ my_bookings|length }}</h4>
+                    <p class="text-muted">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <a href="{% url 'create_event' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Event
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Events -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">My Events</h5>
+                    <a href="{% url 'create_event' %}" class="btn btn-sm btn-primary">Create New</a>
+                </div>
+                <div class="card-body">
+                    {% if my_events %}
+                        {% for event in my_events %}
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>{{ event.title }}</h6>
+                                    <p class="text-muted mb-1">{{ event.description|truncatewords:15 }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y" }} |
+                                        <i class="fas fa-map-marker-alt"></i> {{ event.location }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{% if event.is_active %}success{% else %}secondary{% endif %}">
+                                        {% if event.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">{{ event.budget_min|ksh_currency }}-{{ event.budget_max|ksh_currency }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">No events created yet. <a href="{% url 'create_event' %}">Create your first event</a>!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Bookings -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Bookings</h5>
+                </div>
+                <div class="card-body">
+                    {% if my_bookings %}
+                        {% for booking in my_bookings %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <small>
+                                    {% if booking.musician %}
+                                        {{ booking.musician.get_full_name|default:booking.musician.username }}
+                                    {% else %}
+                                        {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}
+                                    {% endif %}
+                                </small>
+                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% else %}secondary{% endif %} badge-sm">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                            <small class="text-muted">{{ booking.total_amount|ksh_currency }} - {{ booking.start_date|date:"M d" }}</small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">No bookings yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instrument Owner Dashboard -->
+    {% elif user.user_type == 'instrument_owner' %}
+    <div class="row g-4">
+        <!-- Quick Stats -->
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-guitar fa-2x text-primary mb-2"></i>
+                    <h4>{{ my_instruments.count }}</h4>
+                    <p class="text-muted">My Instruments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
+                    <h4>{{ instrument_bookings.count }}</h4>
+                    <p class="text-muted">Total Rentals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
+                    <h4>0</h4>
+                    <p class="text-muted">Total Earnings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <a href="{% url 'add_instrument' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Instrument
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Instruments -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">My Instruments</h5>
+                    <a href="{% url 'add_instrument' %}" class="btn btn-sm btn-primary">Add New</a>
+                </div>
+                <div class="card-body">
+                    {% if my_instruments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Instrument</th>
+                                        <th>Brand/Model</th>
+                                        <th>Daily Rate</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for instrument in my_instruments %}
+                                    <tr>
+                                        <td>{{ instrument.instrument.name }}</td>
+                                        <td>{{ instrument.brand }} {{ instrument.model }}</td>
+                                        <td>${{ instrument.daily_rate }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if instrument.is_available %}success{% else %}danger{% endif %}">
+                                                {% if instrument.is_available %}Available{% else %}Rented{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'instrument_detail' instrument.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No instruments listed yet. <a href="{% url 'add_instrument' %}">Add your first instrument</a>!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Rental Activity -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Rentals</h5>
+                </div>
+                <div class="card-body">
+                    {% if instrument_bookings %}
+                        {% for booking in instrument_bookings %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <small>{{ booking.client.get_full_name|default:booking.client.username }}</small>
+                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% else %}secondary{% endif %} badge-sm">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }} - ${{ booking.total_amount }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">No rentals yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Client Dashboard -->
+    {% else %}
+    <div class="row g-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-music fa-5x text-muted mb-4"></i>
+                    <h3>Welcome to WAFUNGI-NATION!</h3>
+                    <p class="lead text-muted">Explore our platform to find musicians, rent instruments, or discover events.</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'search_musicians' %}" class="btn btn-primary">Find Musicians</a>
+                        <a href="{% url 'search_instruments' %}" class="btn btn-outline-primary">Rent Instruments</a>
+                        <a href="{% url 'browse_events' %}" class="btn btn-outline-secondary">Browse Events</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notifications -->
+    {% if notifications %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Notifications</h5>
+                </div>
+                <div class="card-body">
+                    {% for notification in notifications %}
+                    <div class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-2">
+                        <div>
+                            <h6 class="mb-1">{{ notification.title }}</h6>
+                            <p class="mb-1 text-muted">{{ notification.message }}</p>
+                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="markAsRead({{ notification.id }})">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
