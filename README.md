@@ -1,1 +1,15 @@
 # WAFUNGI-NATION
+# REQUIREMENTS
+
+# asgiref==3.8.1
+# crispy-bootstrap4==2024.10
+# Django==5.2.1
+# django-crispy-forms==2.4
+# gunicorn==23.0.0
+# packaging==25.0
+# pillow==11.2.1
+# psycopg2-binary==2.9.10
+# python-decouple==3.8
+# sqlparse==0.5.3
+# tzdata==2025.2
+# whitenoise==6.9.0
