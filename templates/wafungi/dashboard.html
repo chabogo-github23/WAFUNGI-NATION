@@ -22,7 +22,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-star fa-2x text-warning mb-2"></i>
-                    <h4>{{ profile.rating|floatformat:1 }}</h4>
+                    <h4>{{ profile.rating|floatformat:1|ksh_currency }}</h4>
                     <p class="text-muted">Rating</p>
                 </div>
             </div>
@@ -40,7 +40,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
-                    <h4>${{ total_earnings|floatformat:0 }}</h4>
+                    <h4>{{ total_earnings|ksh_currency }}</h4>
                     <p class="text-muted">Total Earnings</p>
                 </div>
             </div>
@@ -49,7 +49,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-clock fa-2x text-info mb-2"></i>
-                    <h4>${{ profile.hourly_rate }}</h4>
+                    <h4>{{ profile.hourly_rate|ksh_currency }}</h4>
                     <p class="text-muted">Hourly Rate</p>
                 </div>
             </div>
