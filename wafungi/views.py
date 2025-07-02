@@ -2,14 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Sum
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.utils import timezone
+from datetime import datetime, timedelta
 from .models import *
 from .forms import *
 import json
-from decimal import Decimal
 
 def home(request):
     """Homepage with search functionality"""
@@ -92,7 +93,7 @@ def dashboard(request):
                     musician=request.user,
                     status='completed',
                     payment_status=True
-                ).aggregate(total=models.Sum('total_amount'))['total'] or 0,
+                ).aggregate(total=Sum('total_amount'))['total'] or 0,
             })
         except MusicianProfile.DoesNotExist:
             return redirect('profile_setup')
@@ -157,10 +158,19 @@ def search_musicians(request):
         musicians = musicians.filter(user__location__icontains=location)
     
     if min_rate:
-        musicians = musicians.filter(hourly_rate__gte=min_rate)
+        try:
+            musicians = musicians.filter(hourly_rate__gte=float(min_rate))
+        except (ValueError, TypeError):
+            pass
     
     if max_rate:
-        musicians = musicians.filter(hourly_rate__lte=max_rate)
+        try:
+            musicians = musicians.filter(hourly_rate__lte=float(max_rate))
+        except (ValueError, TypeError):
+            pass
+    
+    # Remove duplicates and order
+    musicians = musicians.distinct().order_by('-rating', '-user__date_joined')
     
     # Pagination
     paginator = Paginator(musicians, 12)
@@ -172,12 +182,12 @@ def search_musicians(request):
         'genres': Genre.objects.all(),
         'instruments': Instrument.objects.all(),
         'current_filters': {
-            'q': query,
-            'genre': genre,
-            'instrument': instrument,
-            'location': location,
-            'min_rate': min_rate,
-            'max_rate': max_rate,
+            'q': query or '',
+            'genre': genre or '',
+            'instrument': instrument or '',
+            'location': location or '',
+            'min_rate': min_rate or '',
+            'max_rate': max_rate or '',
         }
     }
     
@@ -201,6 +211,10 @@ def book_musician(request, musician_id):
     """Book a musician"""
     musician = get_object_or_404(MusicianProfile, id=musician_id)
     
+    if request.user == musician.user:
+        messages.error(request, 'You cannot book yourself.')
+        return redirect('musician_detail', musician_id)
+    
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
@@ -209,10 +223,22 @@ def book_musician(request, musician_id):
             booking.musician = musician.user
             
             # Calculate total amount
-            duration = booking.end_date - booking.start_date
-            total_seconds = Decimal(str(duration.total_seconds()))
-            hours = total_seconds / Decimal('3600')
-            booking.total_amount = musician.hourly_rate * hours 
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+            
+            # Validate dates
+            if end_date <= start_date:
+                messages.error(request, 'End date must be after start date.')
+                return render(request, 'wafungi/book_musician.html', {
+                    'form': form,
+                    'musician': musician
+                })
+            
+            duration = end_date - start_date
+            hours = duration.total_seconds() / 3600
+            subtotal = float(musician.hourly_rate) * hours
+            service_fee = subtotal * 0.05  # 5% service fee
+            booking.total_amount = subtotal + service_fee
             
             booking.save()
             
@@ -220,7 +246,7 @@ def book_musician(request, musician_id):
             Notification.objects.create(
                 user=musician.user,
                 title='New Booking Request',
-                message=f'{request.user.get_full_name()} has requested to book you.'
+                message=f'{request.user.get_full_name() or request.user.username} has requested to book you for {hours:.1f} hours.'
             )
             
             messages.success(request, 'Booking request sent successfully!')
@@ -248,7 +274,8 @@ def search_instruments(request):
         instruments = instruments.filter(
             Q(brand__icontains=query) |
             Q(model__icontains=query) |
-            Q(description__icontains=query)
+            Q(description__icontains=query) |
+            Q(instrument__name__icontains=query)
         )
     
     if instrument_type:
@@ -261,7 +288,13 @@ def search_instruments(request):
         instruments = instruments.filter(condition=condition)
     
     if max_rate:
-        instruments = instruments.filter(daily_rate__lte=max_rate)
+        try:
+            instruments = instruments.filter(daily_rate__lte=float(max_rate))
+        except (ValueError, TypeError):
+            pass
+    
+    # Order by creation date
+    instruments = instruments.order_by('-created_at')
     
     # Pagination
     paginator = Paginator(instruments, 12)
@@ -273,19 +306,128 @@ def search_instruments(request):
         'instrument_types': Instrument.objects.all(),
         'conditions': InstrumentListing.CONDITION_CHOICES,
         'current_filters': {
-            'q': query,
-            'instrument': instrument_type,
-            'location': location,
-            'condition': condition,
-            'max_rate': max_rate,
+            'q': query or '',
+            'instrument': instrument_type or '',
+            'location': location or '',
+            'condition': condition or '',
+            'max_rate': max_rate or '',
         }
     }
     
     return render(request, 'wafungi/search_instruments.html', context)
 
+def instrument_detail(request, instrument_id):
+    """Instrument listing detail"""
+    instrument = get_object_or_404(InstrumentListing, id=instrument_id)
+    
+    context = {
+        'instrument': instrument,
+    }
+    
+    return render(request, 'wafungi/instrument_detail.html', context)
+
+@login_required
+def add_instrument(request):
+    """Add a new instrument listing"""
+    if request.user.user_type != 'instrument_owner':
+        messages.error(request, 'Only instrument owners can list instruments.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = InstrumentListingForm(request.POST, request.FILES)
+        if form.is_valid():
+            instrument = form.save(commit=False)
+            instrument.owner = request.user
+            instrument.save()
+            
+            messages.success(request, 'Instrument listed successfully!')
+            return redirect('instrument_detail', instrument.id)
+    else:
+        form = InstrumentListingForm()
+    
+    return render(request, 'wafungi/add_instrument.html', {'form': form})
+
+@login_required
+def rent_instrument(request, instrument_id):
+    """Rent an instrument"""
+    instrument = get_object_or_404(InstrumentListing, id=instrument_id)
+    
+    if not instrument.is_available:
+        messages.error(request, 'This instrument is not available for rent.')
+        return redirect('instrument_detail', instrument.id)
+    
+    if instrument.owner == request.user:
+        messages.error(request, 'You cannot rent your own instrument.')
+        return redirect('instrument_detail', instrument.id)
+    
+    if request.method == 'POST':
+        form = InstrumentRentalForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.client = request.user
+            booking.instrument_listing = instrument
+            
+            # Calculate total amount
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+
+            # Convert dates to datetime for calculation
+            from datetime import date, datetime
+            if isinstance(start_date, date) and not isinstance(start_date, datetime):
+                start_date = datetime.combine(start_date, datetime.min.time())
+            if isinstance(end_date, date) and not isinstance(end_date, datetime):
+                end_date = datetime.combine(end_date, datetime.min.time())
+
+            # Make dates timezone aware
+            if timezone.is_naive(start_date):
+                start_date = timezone.make_aware(start_date)
+            if timezone.is_naive(end_date):
+                end_date = timezone.make_aware(end_date)
+
+            booking.start_date = start_date
+            booking.end_date = end_date
+
+            rental_days = (end_date - start_date).days
+            if rental_days <= 0:
+                rental_days = 1  # Minimum 1 day rental
+
+            subtotal = float(instrument.daily_rate) * rental_days
+            service_fee = subtotal * 0.05  # 5% service fee
+            booking.total_amount = subtotal + service_fee
+            
+            booking.save()
+            
+            # Create notification for instrument owner
+            Notification.objects.create(
+                user=instrument.owner,
+                title='New Rental Request',
+                message=f'{request.user.get_full_name() or request.user.username} has requested to rent your {instrument.brand} {instrument.model} for {rental_days} days.'
+            )
+            
+            # Create notification for client
+            Notification.objects.create(
+                user=request.user,
+                title='Rental Request Sent',
+                message=f'Your rental request for {instrument.brand} {instrument.model} has been sent to the owner.'
+            )
+            
+            messages.success(request, 'Rental request sent successfully! The owner will contact you soon.')
+            return redirect('booking_detail', booking.id)
+    else:
+        form = InstrumentRentalForm()
+    
+    return render(request, 'wafungi/rent_instrument.html', {
+        'form': form,
+        'instrument': instrument
+    })
+
 @login_required
 def create_event(request):
     """Create a new event"""
+    if request.user.user_type != 'organizer':
+        messages.error(request, 'Only event organizers can create events.')
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         form = EventForm(request.POST)
         if form.is_valid():
@@ -312,11 +454,50 @@ def browse_events(request):
     
     return render(request, 'wafungi/browse_events.html', {'page_obj': page_obj})
 
+def event_detail(request, event_id):
+    """Event detail"""
+    event = get_object_or_404(Event, id=event_id)
+    
+    context = {
+        'event': event,
+    }
+    
+    return render(request, 'wafungi/event_detail.html', context)
+
+@login_required
+def booking_detail(request, booking_id):
+    """Booking detail"""
+    # Ensure the user is authorized to view this booking
+    booking = get_object_or_404(Booking, id=booking_id)
+    
+    # Check if user has permission to view this booking
+    if not (booking.client == request.user or 
+            booking.musician == request.user or 
+            (booking.instrument_listing and booking.instrument_listing.owner == request.user)):
+        messages.error(request, 'You do not have permission to view this booking.')
+        return redirect('dashboard')
+    
+    context = {
+        'booking': booking,
+    }
+    
+    return render(request, 'wafungi/booking_detail.html', context)
+
 @login_required
 @require_POST
 def confirm_booking(request, booking_id):
-    """Confirm a booking (for musicians)"""
-    booking = get_object_or_404(Booking, id=booking_id, musician=request.user)
+    """Confirm a booking (for musicians and instrument owners)"""
+    booking = get_object_or_404(Booking, id=booking_id)
+    
+    # Check if user can confirm this booking
+    can_confirm = (
+        (booking.musician and booking.musician == request.user) or
+        (booking.instrument_listing and booking.instrument_listing.owner == request.user)
+    )
+    
+    if not can_confirm:
+        messages.error(request, 'You do not have permission to confirm this booking.')
+        return redirect('dashboard')
     
     if booking.status == 'pending':
         booking.status = 'confirmed'
@@ -326,66 +507,76 @@ def confirm_booking(request, booking_id):
         Notification.objects.create(
             user=booking.client,
             title='Booking Confirmed',
-            message=f'Your booking with {request.user.get_full_name()} has been confirmed.'
+            message=f'Your booking #{booking.id} has been confirmed. Please proceed with payment.'
         )
         
         messages.success(request, 'Booking confirmed successfully!')
+    else:
+        messages.warning(request, 'This booking has already been processed.')
     
-    return redirect('dashboard')
+    return redirect('booking_detail', booking.id)
 
 @login_required
 def payment_process(request, booking_id):
-    """Process payment for booking with multiple payment options"""
+    """Process payment for booking"""
     booking = get_object_or_404(Booking, id=booking_id, client=request.user)
     
     if booking.payment_status:
         messages.info(request, 'This booking has already been paid for.')
         return redirect('booking_detail', booking.id)
     
-    if request.method == 'POST':
-        payment_method = request.POST.get('payment_method')
-        
-        # Simulate different payment methods
-        if payment_method == 'mpesa':
-            # M-Pesa integration would go here
-            # For now, we'll simulate success
-            booking.payment_status = True
-            booking.save()
-            
-            # Create notification
-            Notification.objects.create(
-                user=booking.musician or booking.instrument_listing.owner,
-                title='Payment Received',
-                message=f'Payment of KSH {booking.total_amount} has been received for booking #{booking.id}.'
-            )
-            
-            messages.success(request, 'Payment processed successfully via M-Pesa!')
-            
-        elif payment_method == 'card':
-            # Credit card processing would go here
-            booking.payment_status = True
-            booking.save()
-            
-            Notification.objects.create(
-                user=booking.musician or booking.instrument_listing.owner,
-                title='Payment Received',
-                message=f'Payment of KSH {booking.total_amount} has been received for booking #{booking.id}.'
-            )
-            
-            messages.success(request, 'Payment processed successfully via card!')
-            
-        elif payment_method == 'bank_transfer':
-            # Bank transfer processing would go here
-            # This might require manual verification
-            messages.info(request, 'Bank transfer details sent. Payment will be verified within 24 hours.')
-            
+    if booking.status != 'confirmed':
+        messages.error(request, 'This booking must be confirmed before payment.')
         return redirect('booking_detail', booking.id)
     
-    context = {
-        'booking': booking,
-        'service_fee': booking.total_amount * 0.1,  # 10% service fee
-    }
+    if request.method == 'POST':
+        mpesa_number = request.POST.get('mpesa_number')
         
-
+        if not mpesa_number:
+            messages.error(request, 'Please provide your M-Pesa phone number.')
+            return render(request, 'wafungi/payment.html', {'booking': booking})
+        
+        # Validate phone number format
+        if not mpesa_number.isdigit() or len(mpesa_number) != 9:
+            messages.error(request, 'Please enter a valid 9-digit phone number (e.g., 712345678).')
+            return render(request, 'wafungi/payment.html', {'booking': booking})
+        
+        # Format phone number for M-Pesa
+        formatted_number = '254' + mpesa_number
+        
+        # Process M-Pesa payment
+        try:
+            # For now, we'll simulate successful payment
+            # In production, you would use the actual M-Pesa API
+            payment_result = {
+                'success': True,
+                'transaction_id': f'MPESA{booking.id}{timezone.now().strftime("%Y%m%d%H%M%S")}'
+            }
+            
+            if payment_result['success']:
+                booking.payment_status = True
+                booking.save()
+                
+                # Create notifications
+                recipient = booking.musician or booking.instrument_listing.owner
+                Notification.objects.create(
+                    user=recipient,
+                    title='Payment Received',
+                    message=f'Payment of KSH {booking.total_amount:,.0f} has been received for booking #{booking.id}.'
+                )
+                
+                Notification.objects.create(
+                    user=booking.client,
+                    title='Payment Successful',
+                    message=f'Your payment of KSH {booking.total_amount:,.0f} for booking #{booking.id} was successful.'
+                )
+                
+                messages.success(request, 'Payment processed successfully via M-Pesa!')
+                return redirect('booking_detail', booking.id)
+            else:
+                messages.error(request, 'Payment failed. Please try again.')
+                
+        except Exception as e:
+            messages.error(request, f'Payment processing error: {str(e)}')
     
     return render(request, 'wafungi/payment.html', {'booking': booking})

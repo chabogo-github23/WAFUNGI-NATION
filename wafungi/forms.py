@@ -56,12 +56,10 @@ class MusicianProfileForm(forms.ModelForm):
         widgets = {
             'genres': forms.CheckboxSelectMultiple(),
             'instruments': forms.CheckboxSelectMultiple(),
-            'hourly_rate': forms.NumberInput(attrs={'placeholder': 'Enter amount in KSH'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['hourly_rate'].help_text = 'Enter your hourly rate in Kenyan Shillings (KSH)'
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'stage_name',
@@ -88,14 +86,10 @@ class EventForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 4}),
             'required_genres': forms.CheckboxSelectMultiple(),
             'required_instruments': forms.CheckboxSelectMultiple(),
-            'budget_min': forms.NumberInput(attrs={'placeholder': 'Minimum budget in KSH'}),
-            'budget_max': forms.NumberInput(attrs={'placeholder': 'Maximum budget in KSH'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['budget_min'].help_text = 'Enter minimum budget in Kenyan Shillings (KSH)'
-        self.fields['budget_max'].help_text = 'Enter maximum budget in Kenyan Shillings (KSH)'
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'title',
@@ -141,6 +135,49 @@ class BookingForm(forms.ModelForm):
             Submit('submit', 'Send Booking Request', css_class='btn btn-primary')
         )
 
+class InstrumentRentalForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ('start_date', 'end_date', 'notes')
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Any special requirements or questions about the rental...'}),
+        }
+        labels = {
+            'start_date': 'Rental Start Date',
+            'end_date': 'Rental End Date',
+            'notes': 'Additional Notes (Optional)',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('start_date', css_class='form-group col-md-6 mb-0'),
+                Column('end_date', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            'notes',
+            Submit('submit', 'Send Rental Request', css_class='btn btn-primary')
+        )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        
+        if start_date and end_date:
+            if end_date <= start_date:
+                raise forms.ValidationError("End date must be after start date.")
+            
+            # Check if rental period is reasonable (not more than 30 days)
+            if (end_date - start_date).days > 30:
+                raise forms.ValidationError("Rental period cannot exceed 30 days.")
+        
+        return cleaned_data
+
 class InstrumentListingForm(forms.ModelForm):
     class Meta:
         model = InstrumentListing
@@ -148,12 +185,10 @@ class InstrumentListingForm(forms.ModelForm):
                  'description', 'image', 'location')
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
-            'daily_rate': forms.NumberInput(attrs={'placeholder': 'Daily rate in KSH'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['daily_rate'].help_text = 'Enter daily rental rate in Kenyan Shillings (KSH)'
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Row(
@@ -193,15 +228,5 @@ class SearchForm(forms.Form):
         empty_label="All Instruments"
     )
     location = forms.CharField(max_length=100, required=False)
-    min_rate = forms.DecimalField(
-        max_digits=8, 
-        decimal_places=2, 
-        required=False,
-        widget=forms.NumberInput(attrs={'placeholder': 'Min rate in KSH'})
-    )
-    max_rate = forms.DecimalField(
-        max_digits=8, 
-        decimal_places=2, 
-        required=False,
-        widget=forms.NumberInput(attrs={'placeholder': 'Max rate in KSH'})
-    )
+    min_rate = forms.DecimalField(max_digits=8, decimal_places=2, required=False)
+    max_rate = forms.DecimalField(max_digits=8, decimal_places=2, required=False)

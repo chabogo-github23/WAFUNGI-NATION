@@ -29,7 +29,8 @@ urlpatterns = [
     path('instruments/', views.search_instruments, name='search_instruments'),
     path('instruments/<int:instrument_id>/', additional_views.instrument_detail, name='instrument_detail'),  # Changed this line
     path('instruments/add/', additional_views.add_instrument, name='add_instrument'),  # Changed this line
-    
+    path('instruments/<int:instrument_id>/rent/', views.rent_instrument, name='rent_instrument'),
+
     # Bookings - Update these to use additional_views
     path('bookings/<int:booking_id>/', additional_views.booking_detail, name='booking_detail'),  # Changed this line
     path('bookings/<int:booking_id>/confirm/', views.confirm_booking, name='confirm_booking'),
@@ -41,6 +42,7 @@ urlpatterns = [
     path('api/musician/<int:musician_id>/availability/', api_views.get_musician_availability, name='musician_availability'),
     path('api/instrument/<int:instrument_id>/availability/', api_views.get_instrument_availability, name='instrument_availability'),
     path('api/search/', api_views.search_api, name='search_api'),
+    path('api/send-message/', api_views.send_message_to_owner, name='send_message_to_owner'),
     
     # Password reset
     path('password-reset/', auth_views.PasswordResetView.as_view(template_name='registration/password_reset_form.html'), name='password_reset'),

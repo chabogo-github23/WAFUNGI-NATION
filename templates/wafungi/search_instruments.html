@@ -101,7 +101,7 @@
                             </p>
                             <p class="card-text">{{ instrument.description|truncatewords:15 }}</p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-primary">${{ instrument.daily_rate }}/day</span>
+                                <span class="fw-bold text-primary">{{ instrument.daily_rate|ksh_currency }}/day</span>
                                 <small class="text-muted">
                                     <i class="fas fa-map-marker-alt"></i> {{ instrument.location }}
                                 </small>

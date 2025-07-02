@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
-from .models import Notification
+from .models import Notification, MusicianProfile, InstrumentListing, Booking, Event, Genre, Instrument
 import json
 from django.utils import timezone
 
@@ -41,15 +41,12 @@ def mark_notification_read(request, notification_id):
 @login_required
 def get_musician_availability(request, musician_id):
     """API endpoint to get musician availability"""
-    from .models import MusicianProfile, Booking
-    from datetime import datetime, timedelta
-    
     try:
         musician = MusicianProfile.objects.get(id=musician_id)
         
         # Get bookings for the next 30 days
         start_date = timezone.now()
-        end_date = start_date + timedelta(days=30)
+        end_date = start_date + timezone.timedelta(days=30)
         
         bookings = Booking.objects.filter(
             musician=musician.user,
@@ -77,15 +74,12 @@ def get_musician_availability(request, musician_id):
 @login_required
 def get_instrument_availability(request, instrument_id):
     """API endpoint to get instrument availability"""
-    from .models import InstrumentListing, Booking
-    from datetime import datetime, timedelta
-    
     try:
         instrument = InstrumentListing.objects.get(id=instrument_id)
         
         # Get bookings for the next 30 days
         start_date = timezone.now()
-        end_date = start_date + timedelta(days=30)
+        end_date = start_date + timezone.timedelta(days=30)
         
         bookings = Booking.objects.filter(
             instrument_listing=instrument,
@@ -118,7 +112,6 @@ def search_api(request):
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
     
-    from .models import MusicianProfile, InstrumentListing, Event, Genre, Instrument
     from django.db.models import Q
     
     # Search musicians
@@ -193,3 +186,28 @@ def search_api(request):
         })
     
     return JsonResponse({'results': results})
+
+@login_required
+@require_POST
+def send_message_to_owner(request):
+    """API endpoint to send message to instrument owner"""
+    try:
+        data = json.loads(request.body)
+        instrument_id = data.get('instrument_id')
+        subject = data.get('subject')
+        message = data.get('message')
+        
+        instrument = InstrumentListing.objects.get(id=instrument_id)
+        
+        # Create notification for the owner
+        Notification.objects.create(
+            user=instrument.owner,
+            title=f'Message from {request.user.get_full_name() or request.user.username}',
+            message=f'Subject: {subject}\n\nMessage: {message}\n\nRegarding: {instrument.brand} {instrument.model}'
+        )
+        
+        return JsonResponse({'success': True})
+    except InstrumentListing.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Instrument not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

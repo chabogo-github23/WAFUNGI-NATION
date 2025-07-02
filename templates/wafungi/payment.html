@@ -67,7 +67,7 @@
                                 {% endif %}
                                 <tr>
                                     <th>Service Fee</th>
-                                    <td>{{ booking.total_amount|multiply:0.1 }}</td>
+                                    <td>{{ booking.total_amount|multiply:0.1|ksh_currency_decimal }}</td>
                                 </tr>
                                 <tr class="table-primary">
                                     <th>Total Amount</th>
@@ -78,65 +78,60 @@
                     </div>
                     
                     <!-- Payment Form -->
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa" checked>
-                            <label class="form-check-label" for="mpesa">
-                                <i class="fas fa-mobile-alt me-2 text-success"></i>
-                                M-Pesa
-                                <small class="text-muted d-block">Pay via M-Pesa mobile money</small>
-                            </label>
+                    <form method="post" id="payment-form">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Payment Method</h5>
+                        
+                        <div class="card border-success mb-4">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-mobile-alt fa-3x text-success me-3"></i>
+                                    <div>
+                                        <h5 class="mb-1">M-Pesa Payment</h5>
+                                        <p class="text-muted mb-0">Secure mobile money payment</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="mpesa-number" class="form-label">M-Pesa Phone Number *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">+254</span>
+                                        <input type="tel" class="form-control" id="mpesa-number" name="mpesa_number" 
+                                               placeholder="712345678" pattern="[0-9]{9}" required>
+                                    </div>
+                                    <div class="form-text">Enter your M-Pesa registered phone number (9 digits after +254)</div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-info-circle"></i> How M-Pesa Payment Works
+                                    </h6>
+                                    <ol class="mb-0">
+                                        <li>Click "Pay with M-Pesa" button below</li>
+                                        <li>You'll receive an M-Pesa prompt on your phone</li>
+                                        <li>Enter your M-Pesa PIN to complete payment</li>
+                                        <li>You'll receive confirmation SMS from M-Pesa</li>
+                                    </ol>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_method" id="credit-card" value="card">
-                            <label class="form-check-label" for="credit-card">
-                                <i class="fab fa-cc-visa me-2"></i>
-                                <i class="fab fa-cc-mastercard me-2"></i>
-                                Credit/Debit Card
-                                <small class="text-muted d-block">Visa, Mastercard accepted</small>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_method" id="bank-transfer" value="bank_transfer">
-                            <label class="form-check-label" for="bank-transfer">
-                                <i class="fas fa-university me-2"></i>
-                                Bank Transfer
-                                <small class="text-muted d-block">Direct bank transfer</small>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- M-Pesa Form -->
-                    <div id="mpesa-form" class="border rounded p-3 mb-4">
-                        <div class="mb-3">
-                            <label for="mpesa-number" class="form-label">M-Pesa Phone Number</label>
-                            <input type="tel" class="form-control" id="mpesa-number" placeholder="254712345678">
-                            <div class="form-text">Enter your M-Pesa registered phone number</div>
-                        </div>
-                        <div class="alert alert-info">
-                            <small>
-                                <i class="fas fa-info-circle"></i>
-                                You will receive an M-Pesa prompt on your phone to complete the payment.
-                            </small>
-                        </div>
-                    </div>
-
-                    <!-- Update the payment button -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            Pay KSH {{ booking.total_amount|floatformat:0 }}
-                        </button>
-                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
-                            Cancel
-                        </a>
-                    </div>
-
                         
                         <div class="form-check mb-4">
                             <input class="form-check-input" type="checkbox" id="terms" required>
                             <label class="form-check-label" for="terms">
-                                I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Payment Policy</a>
+                                I agree to the <a href="#" target="_blank">Terms and Conditions</a> and <a href="#" target="_blank">Payment Policy</a>
                             </label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-mobile-alt me-2"></i>
+                                Pay {{ booking.total_amount|ksh_currency }} with M-Pesa
+                            </button>
+                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                                Cancel Payment
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -147,39 +142,63 @@
 
 {% block extra_js %}
 <script>
-    // Simple form validation and payment method toggle
-    document.addEventListener('DOMContentLoaded', function() {
-        const paymentForm = document.getElementById('payment-form');
-        const creditCardForm = document.getElementById('credit-card-form');
-        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
-        
-        // Toggle payment method forms
-        paymentMethods.forEach(method => {
-            method.addEventListener('change', function() {
-                if (this.value === 'credit-card') {
-                    creditCardForm.style.display = 'block';
-                } else {
-                    creditCardForm.style.display = 'none';
-                }
-            });
-        });
-        
-        // Form submission (simulated)
-        paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-            
-            // Simulate payment processing
-            setTimeout(() => {
-                // Submit the form for real
-                this.submit();
-            }, 2000);
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForm = document.getElementById('payment-form');
+    const mpesaNumberInput = document.getElementById('mpesa-number');
+    
+    // Format phone number input
+    mpesaNumberInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        if (value.length > 9) {
+            value = value.substring(0, 9); // Limit to 9 digits
+        }
+        e.target.value = value;
     });
+    
+    // Validate Kenyan phone number format
+    function isValidKenyanNumber(number) {
+        // Kenyan mobile numbers start with 7 and are 9 digits long
+        const kenyanMobileRegex = /^7[0-9]{8}$/;
+        return kenyanMobileRegex.test(number);
+    }
+    
+    // Form submission
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const phoneNumber = mpesaNumberInput.value;
+        
+        // Validate phone number
+        if (!isValidKenyanNumber(phoneNumber)) {
+            alert('Please enter a valid Kenyan mobile number (e.g., 712345678)');
+            mpesaNumberInput.focus();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing M-Pesa Payment...';
+        
+        // Show M-Pesa prompt message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning mt-3';
+        alertDiv.innerHTML = `
+            <h6 class="alert-heading">
+                <i class="fas fa-mobile-alt"></i> M-Pesa Prompt Sent!
+            </h6>
+            <p class="mb-0">Check your phone (+254${phoneNumber}) for the M-Pesa payment prompt and enter your PIN to complete the payment.</p>
+        `;
+        paymentForm.appendChild(alertDiv);
+        
+        // Simulate M-Pesa processing time
+        setTimeout(() => {
+            // Submit the form for real
+            this.submit();
+        }, 3000);
+    });
+});
 </script>
 {% endblock %}
 {% endblock %}

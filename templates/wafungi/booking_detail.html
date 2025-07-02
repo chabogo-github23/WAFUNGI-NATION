@@ -113,7 +113,7 @@
                                     {% endif %}
                                     <tr>
                                         <th>Service Fee</th>
-                                        <td>{{ booking.total_amount|multiply:0.1|floatformat:2 }}</td>
+                                        <td>{{ booking.total_amount|multiply:0.1|ksh_currency_decimal }}</td>
                                     </tr>
                                     <tr class="table-primary">
                                         <th>Total Amount</th>
@@ -194,7 +194,7 @@
             {% elif booking.instrument_listing %}
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Instrument</h5>
+                        <h5 class="mb-0">Rented Instrument</h5>
                     </div>
                     <div class="card-body">
                         <div class="text-center mb-3">
@@ -207,6 +207,18 @@
                             {% endif %}
                             <h5>{{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}</h5>
                             <p class="text-muted">{{ booking.instrument_listing.instrument.name }}</p>
+                            <span class="badge bg-{% if booking.instrument_listing.condition == 'excellent' %}success{% elif booking.instrument_listing.condition == 'good' %}info{% elif booking.instrument_listing.condition == 'fair' %}warning{% else %}danger{% endif %}">
+                                {{ booking.instrument_listing.get_condition_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Rental Details:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Daily Rate:</strong> {{ booking.instrument_listing.daily_rate|ksh_currency }}</li>
+                                <li><strong>Pickup Location:</strong> {{ booking.instrument_listing.location }}</li>
+                                <li><strong>Security Deposit:</strong> {{ booking.instrument_listing.daily_rate|multiply:2|ksh_currency }}</li>
+                            </ul>
                         </div>
                         
                         <div class="mb-3">
@@ -225,7 +237,7 @@
                         </div>
                         
                         <a href="{% url 'instrument_detail' booking.instrument_listing.id %}" class="btn btn-outline-primary w-100">
-                            View Instrument
+                            View Instrument Details
                         </a>
                     </div>
                 </div>
