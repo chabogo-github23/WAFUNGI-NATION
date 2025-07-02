@@ -49,4 +49,12 @@ urlpatterns = [
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
     path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
+
+    # Email Template Previews
+    path('email-preview/payment-receipt/<int:booking_id>/', views.preview_payment_receipt, name='preview_payment_receipt'),
+    path('email-preview/booking-confirmation/<int:booking_id>/', views.preview_booking_confirmation, name='preview_booking_confirmation'),
+    path('email-preview/payment-receipt-text/<int:booking_id>/', views.preview_payment_receipt_text, name='preview_payment_receipt_text'),
+    path('email-preview/booking-confirmation-text/<int:booking_id>/', views.preview_booking_confirmation_text, name='preview_booking_confirmation_text'),
 ]
+
+

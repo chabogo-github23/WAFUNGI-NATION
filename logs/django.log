@@ -1,0 +1,5 @@
+Booking confirmation emails sent successfully for booking #11
+Booking confirmation emails sent successfully for booking #12
+Booking confirmation emails sent successfully for booking #13
+Booking confirmation emails sent successfully for booking #14
+Failed to send payment receipt email for booking #14: Invalid filter: 'mul'

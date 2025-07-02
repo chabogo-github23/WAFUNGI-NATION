@@ -50,14 +50,12 @@
                                     <div class="col-md-6">
                                         <p><strong>Daily Rate:</strong> {{ instrument.daily_rate|ksh_currency }}</p>
                                         <p><strong>Number of Days:</strong> <span id="rental-days">1</span></p>
-                                        <p><strong>Security Deposit:</strong> {{ instrument.daily_rate|multiply:2|ksh_currency }}</p>
                                     </div>
                                     <div class="col-md-6">
                                         <p><strong>Subtotal:</strong> <span id="subtotal">{{ instrument.daily_rate|ksh_currency }}</span></p>
                                         <p><strong>Service Fee (5%):</strong> <span id="service-fee">{{ instrument.daily_rate|multiply:0.05|ksh_currency }}</span></p>
                                         <hr>
                                         <h5><strong>Total Amount:</strong> <span id="total-amount">{{ instrument.daily_rate|multiply:1.05|ksh_currency }}</span></h5>
-                                        <small class="text-muted">*Security deposit will be refunded after return</small>
                                     </div>
                                 </div>
                             </div>
@@ -66,10 +64,10 @@
                         <div class="alert alert-info">
                             <h6>Rental Terms & Conditions:</h6>
                             <ul class="mb-0">
-                                <li>Security deposit is required and will be refunded upon safe return</li>
                                 <li>Late return charges: {{ instrument.daily_rate|multiply:0.5|ksh_currency }} per day</li>
-                                <li>Damage charges will be deducted from security deposit</li>
+                                <li>Damage charges will be assessed separately if applicable</li>
                                 <li>Pickup and return location: {{ instrument.location }}</li>
+                                <li>Payment receipt will be sent to your email after successful payment</li>
                             </ul>
                         </div>
                         

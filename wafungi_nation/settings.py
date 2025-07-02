@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from pathlib import Path
+from decouple import config # type: ignore
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -151,3 +154,56 @@ DEFAULT_FROM_EMAIL = 'noreply@carhire.com'
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'your-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'your-app-password'
+
+# Payment settings (placeholder for future integration)
+PAYMENT_GATEWAY_API_KEY = config('PAYMENT_GATEWAY_API_KEY', default='your-payment-gateway-key')
+
+# M-Pesa Configuration
+MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
+
+if MPESA_ENVIRONMENT == 'sandbox':
+    MPESA_CONSUMER_KEY = config('PQbD21ys5Vfn7VHCHce2z4IL0bG5YmBdYSxrxlP31xixCLzY')
+    MPESA_CONSUMER_SECRET = config('n2h3AGIOY7fQYYuJS1gJIC0mmkuv8YrfyMsq29HdLHKCn7a9pMA3GG4hCuYlq9SG')
+    MPESA_BUSINESS_SHORT_CODE = config('174379')
+    MPESA_PASSKEY = config('bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')
+    MPESA_BASE_URL = 'https://sandbox.safaricom.co.ke'
+else:
+    MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET')
+    MPESA_BUSINESS_SHORT_CODE = config('MPESA_BUSINESS_SHORT_CODE')
+    MPESA_PASSKEY = config('MPESA_PASSKEY')
+    MPESA_BASE_URL = 'https://api.safaricom.co.ke'
+
+MPESA_CALLBACK_URL = config('MPESA_CALLBACK_URL', default='http://localhost:8000/api/mpesa/callback/')
+
+# M-Pesa API URLs
+MPESA_AUTH_URL = f'{MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials'
+MPESA_STK_PUSH_URL = f'{MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest'
+MPESA_QUERY_URL = f'{MPESA_BASE_URL}/mpesa/stkpushquery/v1/query'
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'wafungi.email_utils': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Create logs directory if it doesn't exist
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)

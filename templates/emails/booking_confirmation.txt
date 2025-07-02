@@ -1,0 +1,42 @@
+{{ site_name }} - {% if is_client %}Booking Request Sent{% else %}New Booking Request{% endif %}
+
+{% if is_client %}Dear {{ recipient.get_full_name|default:recipient.username }},
+
+Your {{ booking_type|lower }} request has been sent successfully!
+{% else %}Dear {{ recipient.get_full_name|default:recipient.username }},
+
+You have received a new {{ booking_type|lower }} request from {{ client.get_full_name|default:client.username }}.
+{% endif %}
+
+BOOKING DETAILS
+===============
+Booking ID: #{{ booking.id }}
+Service: {{ booking_type }} - {{ item }}
+Start Date: {{ booking.start_date|date:"F d, Y H:i" }}
+End Date: {{ booking.end_date|date:"F d, Y H:i" }}
+Total Amount: KSH {{ booking.total_amount|floatformat:0 }}
+Status: {{ booking.get_status_display }}
+{% if booking.notes %}Notes: {{ booking.notes }}{% endif %}
+
+{% if is_client %}NEXT STEPS
+==========
+- Wait for the service provider to confirm your booking
+- You will receive an email notification once confirmed
+- After confirmation, you can proceed with payment
+- Contact the service provider if you have any questions
+{% else %}NEXT STEPS
+==========
+- Review the booking details carefully
+- Log in to your dashboard to confirm or decline
+- Contact the client if you need more information
+- Once confirmed, the client will be notified to make payment
+
+CLIENT CONTACT
+==============
+{{ client.get_full_name|default:client.username }}
+{% if client.phone %}Phone: {{ client.phone }}{% endif %}
+Email: {{ client.email }}
+{% endif %}
+
+Thank you for using {{ site_name }}!
+For support, contact us at support@wafungi-nation.com

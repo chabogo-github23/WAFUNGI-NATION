@@ -1,0 +1,42 @@
+{{ site_name }} - Payment Receipt
+
+Dear {{ client.get_full_name|default:client.username }},
+
+✓ PAYMENT SUCCESSFUL
+
+Thank you for your payment! Your {{ booking_type|lower }} has been successfully paid for.
+
+RECEIPT DETAILS
+===============
+Receipt Number: #{{ booking.id }}-{{ payment_date|date:"Ymd" }}
+Booking ID: #{{ booking.id }}
+{% if transaction_id %}Transaction ID: {{ transaction_id }}{% endif %}
+Payment Date: {{ payment_date|date:"F d, Y H:i" }}
+Service: {{ booking_type }} - {{ item }}
+Period: {{ booking.start_date|date:"M d, Y" }} to {{ booking.end_date|date:"M d, Y" }}
+
+PAYMENT BREAKDOWN
+================
+{% if booking.instrument_listing %}Daily Rate: KSH {{ booking.instrument_listing.daily_rate|floatformat:0 }}
+Number of Days: {{ booking.end_date|timeuntil:booking.start_date|cut:" days" }}
+{% endif %}Subtotal: KSH {{ booking.total_amount|add:"-"|mul:0.95|floatformat:0 }}
+Service Fee (5%): KSH {{ booking.total_amount|mul:0.05|floatformat:0 }}
+Total Amount Paid: KSH {{ booking.total_amount|floatformat:0 }}
+
+IMPORTANT NOTES
+===============
+- Please keep this receipt for your records
+- Contact the service provider for pickup/delivery arrangements
+{% if booking.instrument_listing %}- Return the instrument in the same condition to avoid additional charges
+- Late returns may incur additional fees
+{% endif %}- For any issues, contact our support team
+
+{% if owner %}SERVICE PROVIDER CONTACT
+========================
+{{ owner.get_full_name|default:owner.username }}
+{% if owner.phone %}Phone: {{ owner.phone }}{% endif %}
+Email: {{ owner.email }}
+{% endif %}
+
+Thank you for choosing {{ site_name }}!
+For support, contact us at support@wafungi-nation.com
