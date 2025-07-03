@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load wafungi_filters %}
 
 {% block title %}Dashboard - WAFUNGI-NATION{% endblock %}
 
@@ -22,7 +21,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-star fa-2x text-warning mb-2"></i>
-                    <h4>{{ profile.rating|floatformat:1|ksh_currency }}</h4>
+                    <h4>{{ profile.rating|floatformat:1 }}</h4>
                     <p class="text-muted">Rating</p>
                 </div>
             </div>
@@ -40,7 +39,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
-                    <h4>{{ total_earnings|ksh_currency }}</h4>
+                    <h4>KSH {{ total_earnings|floatformat:0 }}</h4>
                     <p class="text-muted">Total Earnings</p>
                 </div>
             </div>
@@ -49,7 +48,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-clock fa-2x text-info mb-2"></i>
-                    <h4>{{ profile.hourly_rate|ksh_currency }}</h4>
+                    <h4>KSH {{ profile.hourly_rate }}</h4>
                     <p class="text-muted">Hourly Rate</p>
                 </div>
             </div>
@@ -80,7 +79,7 @@
                                     <tr>
                                         <td>{{ booking.client.get_full_name|default:booking.client.username }}</td>
                                         <td>{{ booking.start_date|date:"M d, Y" }}</td>
-                                        <td>{{ booking.total_amount|ksh_currency }}</td>
+                                        <td>KSH {{ booking.total_amount }}</td>
                                         <td>
                                             <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}primary{% else %}secondary{% endif %}">
                                                 {{ booking.get_status_display }}
@@ -88,9 +87,9 @@
                                         </td>
                                         <td>
                                             {% if booking.status == 'pending' %}
-                                                <form method="post" action="{% url 'confirm_booking' booking.id %}" class="d-inline">
+                                                <form method="post" action="{% url 'accept_booking' booking.id %}" class="d-inline">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-success">Confirm</button>
+                                                    <button type="submit" class="btn btn-sm btn-success">Accept</button>
                                                 </form>
                                             {% endif %}
                                             <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
@@ -214,7 +213,7 @@
                                         {% if event.is_active %}Active{% else %}Inactive{% endif %}
                                     </span>
                                     <br>
-                                    <small class="text-muted">{{ event.budget_min|ksh_currency }}-{{ event.budget_max|ksh_currency }}</small>
+                                    <small class="text-muted">KSH {{ event.budget_min }}-{{ event.budget_max }}</small>
                                 </div>
                             </div>
                         </div>
@@ -248,20 +247,7 @@
                                     {{ booking.get_status_display }}
                                 </span>
                             </div>
-                            <small class="text-muted">{{ booking.total_amount|ksh_currency }} - {{ booking.start_date|date:"M d" }}</small>
-                            <td>
-                                {% if booking.status == 'pending' %}
-                                    <form method="post" action="{% url 'confirm_booking' booking.id %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-success">Confirm</button>
-                                    </form>
-                                {% elif booking.status == 'confirmed' and not booking.payment_status and booking.client == user %}
-                                    <a href="{% url 'payment_process' booking.id %}" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </a>
-                                {% endif %}
-                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
-                            </td>
+                            <small class="text-muted">KSH {{ booking.total_amount }} - {{ booking.start_date|date:"M d" }}</small>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -297,9 +283,9 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
-                    <h4>0</h4>
-                    <p class="text-muted">Total Earnings</p>
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h4>{{ pending_count }}</h4>
+                    <p class="text-muted">Pending Requests</p>
                 </div>
             </div>
         </div>
@@ -312,6 +298,106 @@
                 </div>
             </div>
         </div>
+
+        <!-- Pending Rental Requests -->
+        {% if pending_requests %}
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Pending Rental Requests ({{ pending_count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Instrument</th>
+                                    <th>Dates</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in pending_requests %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                <i class="fas fa-user-circle fa-2x text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ booking.client.get_full_name|default:booking.client.username }}</strong><br>
+                                                <small class="text-muted">{{ booking.client.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}</strong><br>
+                                        <small class="text-muted">{{ booking.instrument_listing.instrument.name }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ booking.start_date|date:"M d, Y" }}</strong><br>
+                                        <small class="text-muted">to {{ booking.end_date|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>KSH {{ booking.total_amount|floatformat:0 }}</strong><br>
+                                        <small class="text-muted">{{ booking.start_date|timeuntil:booking.end_date }} days</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <form method="post" action="{% url 'accept_booking' booking.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Accept this rental request?')">
+                                                    <i class="fas fa-check"></i> Accept
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#declineModal{{ booking.id }}">
+                                                <i class="fas fa-times"></i> Decline
+                                            </button>
+                                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+
+                                        <!-- Decline Modal -->
+                                        <div class="modal fade" id="declineModal{{ booking.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Decline Rental Request</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="post" action="{% url 'decline_booking' booking.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to decline this rental request from <strong>{{ booking.client.get_full_name|default:booking.client.username }}</strong>?</p>
+                                                            <div class="mb-3">
+                                                                <label for="decline_reason{{ booking.id }}" class="form-label">Reason for declining (optional):</label>
+                                                                <textarea class="form-control" id="decline_reason{{ booking.id }}" name="decline_reason" rows="3" placeholder="e.g., Instrument not available for those dates, maintenance required, etc."></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-danger">Decline Request</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- My Instruments -->
         <div class="col-md-8">
@@ -338,7 +424,7 @@
                                     <tr>
                                         <td>{{ instrument.instrument.name }}</td>
                                         <td>{{ instrument.brand }} {{ instrument.model }}</td>
-                                        <td>{{ instrument.daily_rate|ksh_currency }}</td>
+                                        <td>KSH {{ instrument.daily_rate }}</td>
                                         <td>
                                             <span class="badge bg-{% if instrument.is_available %}success{% else %}danger{% endif %}">
                                                 {% if instrument.is_available %}Available{% else %}Rented{% endif %}
@@ -376,7 +462,7 @@
                                 </span>
                             </div>
                             <small class="text-muted">
-                                {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }} - {{ booking.total_amount|ksh_currency }}
+                                {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }} - KSH {{ booking.total_amount }}
                             </small>
                         </div>
                         {% endfor %}
@@ -405,6 +491,58 @@
                 </div>
             </div>
         </div>
+
+        <!-- My Bookings for Clients -->
+        {% if my_bookings %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">My Recent Bookings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in my_bookings %}
+                                <tr>
+                                    <td>
+                                        {% if booking.musician %}
+                                            <strong>Musician:</strong> {{ booking.musician.get_full_name|default:booking.musician.username }}
+                                        {% elif booking.instrument_listing %}
+                                            <strong>Instrument:</strong> {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ booking.start_date|date:"M d, Y" }}</td>
+                                    <td>KSH {{ booking.total_amount }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if booking.status == 'confirmed' and not booking.payment_status %}
+                                            <a href="{% url 'payment_process' booking.id %}" class="btn btn-sm btn-success">Pay Now</a>
+                                        {% endif %}
+                                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 
@@ -435,4 +573,22 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function markAsRead(notificationId) {
+    fetch(`/api/mark-notification-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+</script>
 {% endblock %}

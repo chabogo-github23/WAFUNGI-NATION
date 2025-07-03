@@ -1,204 +1,143 @@
 {% extends 'base.html' %}
-{% load wafungi_filters %}
 
-{% block title %}Payment - WAFUNGI-NATION{% endblock %}
+{% block title %}Payment - Booking #{{ booking.id }} - WAFUNGI-NATION{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <div class="row">
-        <div class="col-12 mb-4">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'booking_detail' booking.id %}">Booking #{{ booking.id }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Payment</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-    
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">Payment for Booking #{{ booking.id }}</h4>
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card"></i>
+                        Complete Payment - Booking #{{ booking.id }}
+                    </h4>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <h5 class="alert-heading">Payment Summary</h5>
-                        <p class="mb-0">You are about to make a payment for your booking with 
-                            {% if booking.musician %}
-                                {{ booking.musician.get_full_name|default:booking.musician.username }}
-                            {% elif booking.instrument_listing %}
-                                {{ booking.instrument_listing.owner.get_full_name|default:booking.instrument_listing.owner.username }} for {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}
-                            {% endif %}
-                        </p>
-                    </div>
-                    
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th style="width: 40%;">Booking ID</th>
-                                    <td>#{{ booking.id }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Date</th>
-                                    <td>{{ booking.start_date|date:"F d, Y" }} - {{ booking.end_date|date:"F d, Y" }}</td>
-                                </tr>
-                                {% if booking.musician %}
-                                    <tr>
-                                        <th>Musician</th>
-                                        <td>{{ booking.musician.get_full_name|default:booking.musician.username }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Hourly Rate</th>
-                                        <td>{{ booking.musician.musicianprofile.hourly_rate|ksh_currency }}</td>
-                                    </tr>
-                                {% elif booking.instrument_listing %}
-                                    <tr>
-                                        <th>Instrument</th>
-                                        <td>{{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Daily Rate</th>
-                                        <td>{{ booking.instrument_listing.daily_rate|ksh_currency }}</td>
-                                    </tr>
+                    <!-- Booking Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Booking Summary</h5>
+                            <div class="border rounded p-3 bg-light">
+                                {% if booking.instrument_listing %}
+                                    <strong>Instrument:</strong> {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}<br>
+                                    <strong>Owner:</strong> {{ booking.instrument_listing.owner.get_full_name|default:booking.instrument_listing.owner.username }}<br>
+                                    <strong>Daily Rate:</strong> KSH {{ booking.instrument_listing.daily_rate|floatformat:0 }}<br>
+                                {% elif booking.musician %}
+                                    <strong>Musician:</strong> {{ booking.musician.get_full_name|default:booking.musician.username }}<br>
+                                    <strong>Hourly Rate:</strong> KSH {{ booking.musician.musicianprofile.hourly_rate|floatformat:0 }}<br>
                                 {% endif %}
-                                <tr>
-                                    <th>Service Fee</th>
-                                    <td>{{ booking.total_amount|multiply:0.1|ksh_currency_decimal }}</td>
-                                </tr>
-                                <tr class="table-primary">
-                                    <th>Total Amount</th>
-                                    <td class="fw-bold">{{ booking.total_amount|ksh_currency }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Payment Form -->
-                    <form method="post" id="payment-form">
-                        {% csrf_token %}
-                        
-                        <h5 class="mb-3">Payment Method</h5>
-                        
-                        <div class="card border-success mb-4">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="fas fa-mobile-alt fa-3x text-success me-3"></i>
-                                    <div>
-                                        <h5 class="mb-1">M-Pesa Payment</h5>
-                                        <p class="text-muted mb-0">Secure mobile money payment</p>
-                                    </div>
+                                <strong>Duration:</strong> {{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d, Y" }}<br>
+                                <strong>Total Amount:</strong> <span class="text-success fw-bold">KSH {{ booking.total_amount|floatformat:0 }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Payment Method</h5>
+                            <div class="border rounded p-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/M-PESA_LOGO-01.svg" alt="M-Pesa" style="height: 30px;" class="me-2">
+                                    <strong>M-Pesa Payment</strong>
                                 </div>
-                                
+                                <small class="text-muted">
+                                    Secure payment via Safaricom M-Pesa. You will receive an STK push notification on your phone.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <form method="post" id="paymentForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="mpesa-number" class="form-label">M-Pesa Phone Number *</label>
+                                    <label for="mpesa_number" class="form-label">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        M-Pesa Phone Number
+                                    </label>
                                     <div class="input-group">
                                         <span class="input-group-text">+254</span>
-                                        <input type="tel" class="form-control" id="mpesa-number" name="mpesa_number" 
-                                               placeholder="712345678" pattern="[0-9]{9}" required>
+                                        <input type="tel" class="form-control" id="mpesa_number" name="mpesa_number" 
+                                               placeholder="712345678" pattern="[0-9]{9}" maxlength="9" required>
                                     </div>
-                                    <div class="form-text">Enter your M-Pesa registered phone number (9 digits after +254)</div>
+                                    <div class="form-text">
+                                        Enter your 9-digit M-Pesa number (without country code)
+                                    </div>
                                 </div>
-                                
-                                <div class="alert alert-info">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-info-circle"></i> How M-Pesa Payment Works
-                                    </h6>
-                                    <ol class="mb-0">
-                                        <li>Click "Pay with M-Pesa" button below</li>
-                                        <li>You'll receive an M-Pesa prompt on your phone</li>
-                                        <li>Enter your M-Pesa PIN to complete payment</li>
-                                        <li>You'll receive confirmation SMS from M-Pesa</li>
-                                    </ol>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Amount to Pay</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">KSH</span>
+                                        <input type="text" class="form-control" value="{{ booking.total_amount|floatformat:0 }}" readonly>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="terms" required>
-                            <label class="form-check-label" for="terms">
-                                I agree to the <a href="#" target="_blank">Terms and Conditions</a> and <a href="#" target="_blank">Payment Policy</a>
-                            </label>
+
+                        <!-- Payment Instructions -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Payment Instructions:</h6>
+                            <ol class="mb-0">
+                                <li>Enter your M-Pesa phone number above</li>
+                                <li>Click "Pay Now" to initiate payment</li>
+                                <li>You will receive an STK push notification on your phone</li>
+                                <li>Enter your M-Pesa PIN to complete the payment</li>
+                                <li>You will receive a confirmation SMS and email receipt</li>
+                            </ol>
                         </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-mobile-alt me-2"></i>
-                                Pay {{ booking.total_amount|ksh_currency }} with M-Pesa
-                            </button>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
                             <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
-                                Cancel Payment
+                                <i class="fas fa-arrow-left"></i> Back to Booking
                             </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="payButton">
+                                <i class="fas fa-mobile-alt"></i>
+                                Pay KSH {{ booking.total_amount|floatformat:0 }} via M-Pesa
+                            </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-shield-alt text-success"></i> Secure Payment</h6>
+                    <p class="text-muted mb-0">
+                        Your payment is processed securely through Safaricom M-Pesa. 
+                        WAFUNGI-NATION does not store your M-Pesa PIN or payment details.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const paymentForm = document.getElementById('payment-form');
-    const mpesaNumberInput = document.getElementById('mpesa-number');
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    const payButton = document.getElementById('payButton');
+    const mpesaNumber = document.getElementById('mpesa_number').value;
     
-    // Format phone number input
-    mpesaNumberInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-        if (value.length > 9) {
-            value = value.substring(0, 9); // Limit to 9 digits
-        }
-        e.target.value = value;
-    });
-    
-    // Validate Kenyan phone number format
-    function isValidKenyanNumber(number) {
-        // Kenyan mobile numbers start with 7 and are 9 digits long
-        const kenyanMobileRegex = /^7[0-9]{8}$/;
-        return kenyanMobileRegex.test(number);
+    if (mpesaNumber.length !== 9 || !/^\d+$/.test(mpesaNumber)) {
+        e.preventDefault();
+        alert('Please enter a valid 9-digit M-Pesa number');
+        return;
     }
     
-    // Form submission
-    paymentForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const phoneNumber = mpesaNumberInput.value;
-        
-        // Validate phone number
-        if (!isValidKenyanNumber(phoneNumber)) {
-            alert('Please enter a valid Kenyan mobile number (e.g., 712345678)');
-            mpesaNumberInput.focus();
-            return;
-        }
-        
-        // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing M-Pesa Payment...';
-        
-        // Show M-Pesa prompt message
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-warning mt-3';
-        alertDiv.innerHTML = `
-            <h6 class="alert-heading">
-                <i class="fas fa-mobile-alt"></i> M-Pesa Prompt Sent!
-            </h6>
-            <p class="mb-0">Check your phone (+254${phoneNumber}) for the M-Pesa payment prompt and enter your PIN to complete the payment.</p>
-        `;
-        paymentForm.appendChild(alertDiv);
-        
-        // Simulate M-Pesa processing time
-        setTimeout(() => {
-            // Submit the form for real
-            this.submit();
-        }, 3000);
-    });
+    payButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Payment...';
+    payButton.disabled = true;
+});
+
+// Auto-format phone number input
+document.getElementById('mpesa_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 9) {
+        value = value.substring(0, 9);
+    }
+    e.target.value = value;
 });
 </script>
-{% endblock %}
 {% endblock %}

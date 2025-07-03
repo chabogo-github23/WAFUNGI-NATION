@@ -3,3 +3,10 @@ Booking confirmation emails sent successfully for booking #12
 Booking confirmation emails sent successfully for booking #13
 Booking confirmation emails sent successfully for booking #14
 Failed to send payment receipt email for booking #14: Invalid filter: 'mul'
+Booking confirmation emails sent successfully for booking #15
+Failed to send email to ['scalny@ueab.ac.ke']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #16 - pending>, 'client': <SimpleLazyObject: <User: PHILIP>>, 'musician': None, 'instrument_listing': <InstrumentListing: Yamaha yamaha - Bass>}]
+Failed to send email to ['scalny@ueab.ac.ke']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #17 - pending>, 'client': <SimpleLazyObject: <User: PHILIP>>, 'musician': None, 'instrument_listing': <InstrumentListing: Yamaha Q7 - drums>}]
+Failed to send email to ['wesongapaul@gmail.com']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #18 - pending>, 'client': <SimpleLazyObject: <User: CLIENT>>, 'musician': None, 'instrument_listing': <InstrumentListing: Yamaha yamaha - Bass>}]
+Failed to send email to ['wesongapaul@gmail.com']: Invalid filter: 'mul'
+Failed to send email to ['wesongapaul@gmail.com']: Invalid filter: 'mul'
+Failed to send email to ['wesongapaul@gmail.com']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #19 - pending>, 'client': <SimpleLazyObject: <User: CLIENT>>, 'musician': <User: CHABOGO>, 'instrument_listing': None}]

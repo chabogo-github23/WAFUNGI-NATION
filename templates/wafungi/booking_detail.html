@@ -27,6 +27,29 @@
                     </span>
                 </div>
                 <div class="card-body">
+                    <!-- Status Alert -->
+                    {% if booking.status == 'pending' and booking.client == user %}
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-clock"></i>
+                            <strong>Waiting for confirmation:</strong> Your booking request is pending approval from the service provider.
+                        </div>
+                    {% elif booking.status == 'confirmed' and booking.client == user and not booking.payment_status %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Booking Confirmed!</strong> Your booking has been accepted. Please proceed with payment to secure your booking.
+                        </div>
+                    {% elif booking.status == 'confirmed' and booking.payment_status %}
+                        <div class="alert alert-primary" role="alert">
+                            <i class="fas fa-credit-card"></i>
+                            <strong>Payment Complete!</strong> Your booking is confirmed and paid for.
+                        </div>
+                    {% elif booking.status == 'cancelled' %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-times-circle"></i>
+                            <strong>Booking Cancelled:</strong> This booking has been cancelled.
+                        </div>
+                    {% endif %}
+
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h5>Booking Information</h5>
@@ -86,8 +109,12 @@
                                 <tbody>
                                     {% if booking.musician %}
                                         <tr>
+                                            <th>Service Type</th>
+                                            <td>Musician Booking</td>
+                                        </tr>
+                                        <tr>
                                             <th>Hourly Rate</th>
-                                            <td>{{ booking.musician.musicianprofile.hourly_rate|ksh_currency }}</td>
+                                            <td>KSH {{ booking.musician.musicianprofile.hourly_rate|floatformat:0 }}</td>
                                         </tr>
                                         <tr>
                                             <th>Duration</th>
@@ -99,8 +126,12 @@
                                         </tr>
                                     {% elif booking.instrument_listing %}
                                         <tr>
+                                            <th>Service Type</th>
+                                            <td>Instrument Rental</td>
+                                        </tr>
+                                        <tr>
                                             <th>Daily Rate</th>
-                                            <td>{{ booking.instrument_listing.daily_rate|ksh_currency }}</td>
+                                            <td>KSH {{ booking.instrument_listing.daily_rate|floatformat:0 }}</td>
                                         </tr>
                                         <tr>
                                             <th>Rental Days</th>
@@ -112,12 +143,12 @@
                                         </tr>
                                     {% endif %}
                                     <tr>
-                                        <th>Service Fee</th>
-                                        <td>{{ booking.total_amount|multiply:0.1|ksh_currency_decimal }}</td>
+                                        <th>Service Fee (5%)</th>
+                                        <td>KSH {{ booking.total_amount|multiply:0.05|floatformat:0 }}</td>
                                     </tr>
                                     <tr class="table-primary">
                                         <th>Total Amount</th>
-                                        <td class="fw-bold">{{ booking.total_amount|ksh_currency }}</td>
+                                        <td class="fw-bold">KSH {{ booking.total_amount|floatformat:0 }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -125,25 +156,43 @@
                     </div>
                     
                     <!-- Action Buttons -->
-                    <div class="d-flex gap-2">
-                        {% if booking.client == user and booking.status == 'pending' %}
-                            <a href="#" class="btn btn-outline-danger">Cancel Booking</a>
-                        {% endif %}
-                        
-                        {% if booking.musician == user and booking.status == 'pending' %}
-                            <form method="post" action="{% url 'confirm_booking' booking.id %}" class="d-inline">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <!-- For Service Providers (Musicians/Instrument Owners) -->
+                        {% if can_confirm %}
+                            <form method="post" action="{% url 'accept_booking' booking.id %}" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-success">Confirm Booking</button>
+                                <button type="submit" class="btn btn-success" onclick="return confirm('Accept this booking request?')">
+                                    <i class="fas fa-check"></i> Accept Booking
+                                </button>
                             </form>
-                            <a href="#" class="btn btn-outline-danger">Decline Booking</a>
                         {% endif %}
                         
-                        {% if booking.client == user and booking.status == 'confirmed' and not booking.payment_status %}
-                            <a href="{% url 'payment_process' booking.id %}" class="btn btn-primary">Make Payment</a>
+                        {% if can_decline %}
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#declineModal">
+                                <i class="fas fa-times"></i> Decline Booking
+                            </button>
+                        {% endif %}
+                        
+                        <!-- For Clients -->
+                        {% if can_pay %}
+                            <a href="{% url 'payment_process' booking.id %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-credit-card"></i> Pay Now - KSH {{ booking.total_amount|floatformat:0 }}
+                            </a>
+                        {% endif %}
+                        
+                        {% if can_cancel %}
+                            <form method="post" action="{% url 'cancel_booking' booking.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                    <i class="fas fa-ban"></i> Cancel Booking
+                                </button>
+                            </form>
                         {% endif %}
                         
                         {% if booking.status == 'completed' and not booking.review %}
-                            <a href="#" class="btn btn-outline-primary">Leave Review</a>
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="fas fa-star"></i> Leave Review
+                            </a>
                         {% endif %}
                     </div>
                 </div>
@@ -215,9 +264,8 @@
                         <div class="mb-3">
                             <h6>Rental Details:</h6>
                             <ul class="list-unstyled">
-                                <li><strong>Daily Rate:</strong> {{ booking.instrument_listing.daily_rate|ksh_currency }}</li>
+                                <li><strong>Daily Rate:</strong> KSH {{ booking.instrument_listing.daily_rate|floatformat:0 }}</li>
                                 <li><strong>Pickup Location:</strong> {{ booking.instrument_listing.location }}</li>
-                                <li><strong>Security Deposit:</strong> {{ booking.instrument_listing.daily_rate|multiply:2|ksh_currency }}</li>
                             </ul>
                         </div>
                         
@@ -276,4 +324,32 @@
         </div>
     </div>
 </div>
+
+<!-- Decline Modal -->
+{% if can_decline %}
+<div class="modal fade" id="declineModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Decline Booking Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'decline_booking' booking.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to decline this booking request from <strong>{{ booking.client.get_full_name|default:booking.client.username }}</strong>?</p>
+                    <div class="mb-3">
+                        <label for="decline_reason" class="form-label">Reason for declining (optional):</label>
+                        <textarea class="form-control" id="decline_reason" name="decline_reason" rows="3" placeholder="e.g., Instrument not available for those dates, maintenance required, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Decline Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

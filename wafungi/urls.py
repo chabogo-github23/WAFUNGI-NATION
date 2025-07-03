@@ -3,9 +3,10 @@ from django.contrib.auth import views as auth_views
 from . import views
 from . import api_views
 from . import additional_views 
+from . import views, api_views 
 
 urlpatterns = [
-    # Home and authentication
+    # Home and authenticatio
     path('', views.home, name='home'),
     path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
@@ -32,8 +33,11 @@ urlpatterns = [
     path('instruments/<int:instrument_id>/rent/', views.rent_instrument, name='rent_instrument'),
 
     # Bookings - Update these to use additional_views
-    path('bookings/<int:booking_id>/', additional_views.booking_detail, name='booking_detail'),  # Changed this line
+    path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),
+    path('bookings/<int:booking_id>/accept/', views.accept_booking, name='accept_booking'),
+    path('bookings/<int:booking_id>/decline/', views.decline_booking, name='decline_booking'),
     path('bookings/<int:booking_id>/confirm/', views.confirm_booking, name='confirm_booking'),
+    path('bookings/<int:booking_id>/cancel/', views.cancel_booking, name='cancel_booking'),
     path('bookings/<int:booking_id>/payment/', views.payment_process, name='payment_process'),
     
     # API endpoints
@@ -55,6 +59,12 @@ urlpatterns = [
     path('email-preview/booking-confirmation/<int:booking_id>/', views.preview_booking_confirmation, name='preview_booking_confirmation'),
     path('email-preview/payment-receipt-text/<int:booking_id>/', views.preview_payment_receipt_text, name='preview_payment_receipt_text'),
     path('email-preview/booking-confirmation-text/<int:booking_id>/', views.preview_booking_confirmation_text, name='preview_booking_confirmation_text'),
+
+    # M-Pesa Integration
+    #path('mpesa/callback/', mpesa_views.mpesa_callback, name='mpesa_callback'),
+    #path('mpesa/confirmation/', mpesa_views.mpesa_confirmation, name='mpesa_confirmation'),
+    #path('mpesa/validation/', mpesa_views.mpesa_validation, name='mpesa_validation'),
+    
 ]
 
 
