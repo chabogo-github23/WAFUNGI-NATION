@@ -26,6 +26,13 @@ urlpatterns = [
     path('events/create/', views.create_event, name='create_event'),
     path('events/<int:event_id>/', additional_views.event_detail, name='event_detail'),  # Changed this line
     
+    # Event Applications
+    path('events/<int:event_id>/apply/', additional_views.apply_for_event, name='apply_for_event'),
+    path('events/<int:event_id>/applications/', additional_views.view_event_applications, name='view_event_applications'),
+    path('applications/<int:application_id>/respond/', additional_views.respond_to_application, name='respond_to_application'),
+    path('applications/<int:application_id>/withdraw/', additional_views.withdraw_application, name='withdraw_application'),
+    path('my-applications/', additional_views.my_applications, name='my_applications'),
+
     # Instruments - Update these to use additional_views
     path('instruments/', views.search_instruments, name='search_instruments'),
     path('instruments/<int:instrument_id>/', additional_views.instrument_detail, name='instrument_detail'),  # Changed this line
@@ -66,5 +73,3 @@ urlpatterns = [
     #path('mpesa/validation/', mpesa_views.mpesa_validation, name='mpesa_validation'),
     
 ]
-
-

@@ -10,3 +10,6 @@ Failed to send email to ['wesongapaul@gmail.com']: Failed lookup for key [recipi
 Failed to send email to ['wesongapaul@gmail.com']: Invalid filter: 'mul'
 Failed to send email to ['wesongapaul@gmail.com']: Invalid filter: 'mul'
 Failed to send email to ['wesongapaul@gmail.com']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #19 - pending>, 'client': <SimpleLazyObject: <User: CLIENT>>, 'musician': <User: CHABOGO>, 'instrument_listing': None}]
+Failed to send email to ['wesongapaul@gmail.com']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #20 - pending>, 'client': <SimpleLazyObject: <User: CLIENT>>, 'musician': None, 'instrument_listing': <InstrumentListing: Yamaha yamaha - Bass>}]
+Failed to send email to ['calebchabogo4@gmail.com']: emails/welcome.html
+Failed to send email to ['calebchabogo4@gmail.com']: Failed lookup for key [recipient] in [{'True': True, 'False': False, 'None': None}, {'booking': <Booking: Booking #21 - pending>, 'client': <SimpleLazyObject: <User: KORGY>>, 'musician': None, 'instrument_listing': <InstrumentListing: Yamaha yamaha - Bass>}]

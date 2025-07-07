@@ -101,6 +101,31 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+class EventApplication(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined'),
+        ('withdrawn', 'Withdrawn'),
+    )
+    
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='applications')
+    musician = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_applications')
+    cover_letter = models.TextField(help_text="Tell the organizer why you're perfect for this event")
+    proposed_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="Your proposed rate for this event")
+    availability_confirmed = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    organizer_notes = models.TextField(blank=True, help_text="Notes from the event organizer")
+    applied_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('event', 'musician')  # Prevent duplicate applications
+        ordering = ['-applied_at']
+    
+    def __str__(self):
+        return f"{self.musician.get_full_name() or self.musician.username} - {self.event.title}"
+
 class Booking(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -113,6 +138,7 @@ class Booking(models.Model):
     musician = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings_received', null=True, blank=True)
     instrument_listing = models.ForeignKey(InstrumentListing, on_delete=models.CASCADE, null=True, blank=True)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True)
+    event_application = models.OneToOneField(EventApplication, on_delete=models.CASCADE, null=True, blank=True, related_name='booking')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)

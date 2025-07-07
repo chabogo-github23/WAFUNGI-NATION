@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Applications for {{ event.title }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'event_detail' event.id %}">{{ event.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Applications</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Applications for {{ event.title }}
+                    </h4>
+                    <span class="badge bg-primary fs-6">{{ applications.count }} Application{{ applications.count|pluralize }}</span>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                        {% for application in applications %}
+                            <div class="card mb-4 {% if application.status == 'accepted' %}border-success{% elif application.status == 'declined' %}border-danger{% endif %}">
+                                <div class="card-header">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                {% if application.musician.profile_picture %}
+                                                    <img src="{{ application.musician.profile_picture.url }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" alt="{{ application.musician.get_full_name }}">
+                                                {% else %}
+                                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                                        <i class="fas fa-user-circle fa-2x text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-0">
+                                                        {% if application.musician.musicianprofile.stage_name %}
+                                                            {{ application.musician.musicianprofile.stage_name }}
+                                                        {% else %}
+                                                            {{ application.musician.get_full_name|default:application.musician.username }}
+                                                        {% endif %}
+                                                    </h6>
+                                                    <small class="text-muted">{{ application.musician.email }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <strong>KSH {{ application.proposed_rate|floatformat:0 }}</strong><br>
+                                            <small class="text-muted">Proposed Rate</small>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <span class="badge bg-{% if application.status == 'pending' %}warning{% elif application.status == 'accepted' %}success{% elif application.status == 'declined' %}danger{% else %}secondary{% endif %} fs-6">
+                                                {{ application.get_status_display }}
+                                            </span><br>
+                                            <small class="text-muted">{{ application.applied_at|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6>Cover Letter:</h6>
+                                            <p class="mb-3">{{ application.cover_letter|linebreaks }}</p>
+                                            
+                                            {% if application.organizer_notes %}
+                                                <h6>Your Notes:</h6>
+                                                <p class="text-muted">{{ application.organizer_notes|linebreaks }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>Musician Details:</h6>
+                                            <div class="mb-2">
+                                                <strong>Experience:</strong> {{ application.musician.musicianprofile.experience_years }} years
+                                            </div>
+                                            <div class="mb-2">
+                                                <strong>Rating:</strong> 
+                                                <span class="text-warning">
+                                                    {% for i in "12345" %}
+                                                        {% if forloop.counter <= application.musician.musicianprofile.rating %}
+                                                            <i class="fas fa-star"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </span>
+                                                ({{ application.musician.musicianprofile.rating|floatformat:1 }})
+                                            </div>
+                                            <div class="mb-2">
+                                                <strong>Total Gigs:</strong> {{ application.musician.musicianprofile.total_gigs }}
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Location:</strong> {{ application.musician.location|default:"Not specified" }}
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <strong>Genres:</strong><br>
+                                                {% for genre in application.musician.musicianprofile.genres.all %}
+                                                    <span class="badge bg-secondary me-1 mb-1">{{ genre.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <strong>Instruments:</strong><br>
+                                                {% for instrument in application.musician.musicianprofile.instruments.all %}
+                                                    <span class="badge bg-info me-1 mb-1">{{ instrument.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if application.status == 'pending' %}
+                                        <div class="border-top pt-3 mt-3">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <div class="mb-3">
+                                                        <label for="notes_{{ application.id }}" class="form-label">Notes (optional):</label>
+                                                        <textarea class="form-control" id="notes_{{ application.id }}" rows="2" placeholder="Add any notes for the musician..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 d-flex align-items-end">
+                                                    <div class="btn-group w-100" role="group">
+                                                        <button type="button" class="btn btn-success" onclick="respondToApplication({{ application.id }}, 'accept')">
+                                                            <i class="fas fa-check me-1"></i>Accept
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger" onclick="respondToApplication({{ application.id }}, 'decline')">
+                                                            <i class="fas fa-times me-1"></i>Decline
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                            <h5>No Applications Yet</h5>
+                            <p class="text-muted">No musicians have applied for this event yet. Share your event to get more visibility!</p>
+                            <a href="{% url 'event_detail' event.id %}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Event
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function respondToApplication(applicationId, action) {
+    const notes = document.getElementById(`notes_${applicationId}`).value;
+    const actionText = action === 'accept' ? 'accept' : 'decline';
+    
+    if (confirm(`Are you sure you want to ${actionText} this application?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/applications/${applicationId}/respond/`;
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+            <input type="hidden" name="action" value="${action}">
+            <input type="hidden" name="organizer_notes" value="${notes}">
+        `;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

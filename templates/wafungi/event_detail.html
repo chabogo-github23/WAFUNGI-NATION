@@ -78,10 +78,50 @@
                     </div>
                     
                     {% if user.is_authenticated and user.user_type == 'musician' %}
-                        <div class="alert alert-info">
-                            <h6>Interested in this event?</h6>
-                            <p>If you're available and match the requirements, you can apply to perform at this event.</p>
-                            <a href="#" class="btn btn-primary">Apply Now</a>
+                        {% if has_applied %}
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-check-circle me-2"></i>Application Submitted</h6>
+                                <p class="mb-2">You have already applied for this event.</p>
+                                <p class="mb-2"><strong>Status:</strong> 
+                                    <span class="badge bg-{% if user_application.status == 'pending' %}warning{% elif user_application.status == 'accepted' %}success{% elif user_application.status == 'declined' %}danger{% else %}secondary{% endif %}">
+                                        {{ user_application.get_status_display }}
+                                    </span>
+                                </p>
+                                <p class="mb-2"><strong>Proposed Rate:</strong> KSH {{ user_application.proposed_rate|floatformat:0 }}</p>
+                                {% if user_application.organizer_notes %}
+                                    <p class="mb-2"><strong>Organizer Notes:</strong> {{ user_application.organizer_notes }}</p>
+                                {% endif %}
+                                <a href="{% url 'my_applications' %}" class="btn btn-sm btn-outline-primary">View All My Applications</a>
+                            </div>
+                        {% elif can_apply %}
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-music me-2"></i>Interested in this event?</h6>
+                                <p class="mb-2">If you're available and match the requirements, you can apply to perform at this event.</p>
+                                <a href="{% url 'apply_for_event' event.id %}" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Apply Now
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-info-circle me-2"></i>Application Not Available</h6>
+                                <p class="mb-0">
+                                    {% if event.date <= timezone.now %}
+                                        This event has already passed.
+                                    {% elif not event.is_active %}
+                                        This event is no longer accepting applications.
+                                    {% else %}
+                                        You cannot apply for this event.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+                    {% elif user.is_authenticated and user == event.organizer %}
+                        <div class="alert alert-primary">
+                            <h6><i class="fas fa-users me-2"></i>Manage Applications</h6>
+                            <p class="mb-2">You have received {{ total_applications }} application{{ total_applications|pluralize }} for this event.</p>
+                            <a href="{% url 'view_event_applications' event.id %}" class="btn btn-primary">
+                                <i class="fas fa-eye me-2"></i>View Applications
+                            </a>
                         </div>
                     {% endif %}
                 </div>

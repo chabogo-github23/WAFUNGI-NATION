@@ -119,6 +119,50 @@ class NotificationAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated} notifications marked as read.')
     mark_as_read.short_description = 'Mark selected notifications as read'
 
+@admin.register(EventApplication)
+class EventApplicationAdmin(admin.ModelAdmin):
+    list_display = ('musician', 'event', 'proposed_rate', 'status', 'applied_at')
+    list_filter = ('status', 'applied_at', 'event__event_type')
+    search_fields = ('musician__username', 'musician__first_name', 'musician__last_name', 'event__title')
+    date_hierarchy = 'applied_at'
+    readonly_fields = ('applied_at', 'updated_at')
+    
+    fieldsets = (
+        ('Application Info', {
+            'fields': ('event', 'musician', 'status')
+        }),
+        ('Details', {
+            'fields': ('cover_letter', 'proposed_rate', 'availability_confirmed')
+        }),
+        ('Organizer Response', {
+            'fields': ('organizer_notes',)
+        }),
+        ('Timestamps', {
+            'fields': ('applied_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_musician_name(self, obj):
+        return obj.musician.get_full_name() or obj.musician.username
+    get_musician_name.short_description = 'Musician'
+    
+    def get_event_title(self, obj):
+        return obj.event.title
+    get_event_title.short_description = 'Event'
+    
+    actions = ['mark_as_accepted', 'mark_as_declined']
+    
+    def mark_as_accepted(self, request, queryset):
+        updated = queryset.update(status='accepted')
+        self.message_user(request, f'{updated} applications marked as accepted.')
+    mark_as_accepted.short_description = 'Mark selected applications as accepted'
+    
+    def mark_as_declined(self, request, queryset):
+        updated = queryset.update(status='declined')
+        self.message_user(request, f'{updated} applications marked as declined.')
+    mark_as_declined.short_description = 'Mark selected applications as declined'
+
 # Customize admin site
 admin.site.site_header = 'WAFUNGI-NATION Administration'
 admin.site.site_title = 'WAFUNGI-NATION Admin'

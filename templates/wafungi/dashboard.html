@@ -256,6 +256,69 @@
                 </div>
             </div>
         </div>
+
+        <!-- Pending Applications for Organizers -->
+        {% if pending_applications %}
+        <div class="col-12 mt-4">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell"></i>
+                        Pending Event Applications ({{ pending_applications.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Musician</th>
+                                    <th>Proposed Rate</th>
+                                    <th>Applied</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in pending_applications %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ application.event.title }}</strong><br>
+                                        <small class="text-muted">{{ application.event.date|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if application.musician.profile_picture %}
+                                                <img src="{{ application.musician.profile_picture.url }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;" alt="{{ application.musician.get_full_name }}">
+                                            {% else %}
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-muted"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ application.musician.get_full_name|default:application.musician.username }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>KSH {{ application.proposed_rate|floatformat:0 }}</td>
+                                    <td>{{ application.applied_at|timesince }} ago</td>
+                                    <td>
+                                        <a href="{% url 'view_event_applications' application.event.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'my_applications' %}" class="btn btn-outline-primary">View All Applications</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Instrument Owner Dashboard -->

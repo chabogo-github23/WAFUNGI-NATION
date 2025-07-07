@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Apply for {{ event.title }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'browse_events' %}">Events</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'event_detail' event.id %}">{{ event.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Apply</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-music me-2"></i>
+                        Apply to Perform at {{ event.title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Application Guidelines</h6>
+                        <ul class="mb-0">
+                            <li>Be specific about your experience and musical style</li>
+                            <li>Mention any relevant equipment you'll bring</li>
+                            <li>Propose a fair rate based on the event budget</li>
+                            <li>Confirm your availability for the entire event duration</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.cover_letter.id_for_label }}" class="form-label">
+                                <strong>{{ form.cover_letter.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.cover_letter }}
+                            {% if form.cover_letter.help_text %}
+                                <div class="form-text">{{ form.cover_letter.help_text }}</div>
+                            {% endif %}
+                            {% if form.cover_letter.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.cover_letter.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.proposed_rate.id_for_label }}" class="form-label">
+                                <strong>{{ form.proposed_rate.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">KSH</span>
+                                {{ form.proposed_rate }}
+                            </div>
+                            {% if form.proposed_rate.help_text %}
+                                <div class="form-text">{{ form.proposed_rate.help_text }}</div>
+                            {% endif %}
+                            {% if form.proposed_rate.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.proposed_rate.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.availability_confirmed }}
+                                <label class="form-check-label" for="{{ form.availability_confirmed.id_for_label }}">
+                                    <strong>{{ form.availability_confirmed.label }}</strong>
+                                    <span class="text-danger">*</span>
+                                </label>
+                            </div>
+                            {% if form.availability_confirmed.help_text %}
+                                <div class="form-text">{{ form.availability_confirmed.help_text }}</div>
+                            {% endif %}
+                            {% if form.availability_confirmed.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.availability_confirmed.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                Submit Application
+                            </button>
+                            <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Event
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Event Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Summary</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ event.title }}</h6>
+                    <p class="text-muted mb-3">{{ event.description|truncatewords:20 }}</p>
+                    
+                    <div class="mb-2">
+                        <i class="fas fa-calendar me-2 text-primary"></i>
+                        <strong>Date:</strong> {{ event.date|date:"F d, Y" }}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-clock me-2 text-primary"></i>
+                        <strong>Time:</strong> {{ event.date|date:"g:i A" }}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-hourglass-half me-2 text-primary"></i>
+                        <strong>Duration:</strong> {{ event.duration_hours }} hours
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                        <strong>Location:</strong> {{ event.location }}
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-dollar-sign me-2 text-success"></i>
+                        <strong>Budget:</strong> KSH {{ event.budget_min|floatformat:0 }} - {{ event.budget_max|floatformat:0 }}
+                    </div>
+
+                    {% if event.required_genres.all %}
+                        <div class="mb-3">
+                            <strong>Required Genres:</strong><br>
+                            {% for genre in event.required_genres.all %}
+                                <span class="badge bg-secondary me-1">{{ genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if event.required_instruments.all %}
+                        <div class="mb-0">
+                            <strong>Required Instruments:</strong><br>
+                            {% for instrument in event.required_instruments.all %}
+                                <span class="badge bg-info me-1">{{ instrument.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Your Profile Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" class="rounded-circle img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;" alt="Your Profile">
+                        {% else %}
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px;">
+                                <i class="fas fa-user-circle fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <h6 class="mt-2">{{ musician_profile.stage_name|default:user.get_full_name|default:user.username }}</h6>
+                    </div>
+
+                    <div class="mb-2">
+                        <strong>Experience:</strong> {{ musician_profile.experience_years }} years
+                    </div>
+                    <div class="mb-2">
+                        <strong>Hourly Rate:</strong> KSH {{ musician_profile.hourly_rate|floatformat:0 }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Rating:</strong> 
+                        <span class="text-warning">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= musician_profile.rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        ({{ musician_profile.rating|floatformat:1 }})
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Genres:</strong><br>
+                        {% for genre in musician_profile.genres.all %}
+                            <span class="badge bg-secondary me-1">{{ genre.name }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-0">
+                        <strong>Instruments:</strong><br>
+                        {% for instrument in musician_profile.instruments.all %}
+                            <span class="badge bg-info me-1">{{ instrument.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

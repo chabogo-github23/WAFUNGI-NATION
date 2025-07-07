@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime, timedelta
-from .models import User, MusicianProfile, InstrumentListing, Booking, Review, Event, Genre, Instrument
+from .models import User, MusicianProfile, InstrumentListing, Booking, Review, Event, Genre, Instrument, EventApplication
 
 class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -105,6 +105,53 @@ class EventForm(forms.ModelForm):
             raise ValidationError("Minimum budget cannot be greater than maximum budget.")
 
         return cleaned_data
+
+class EventApplicationForm(forms.ModelForm):
+    class Meta:
+        model = EventApplication
+        fields = ['cover_letter', 'proposed_rate', 'availability_confirmed']
+        widgets = {
+            'cover_letter': forms.Textarea(attrs={
+                'rows': 6,
+                'placeholder': 'Tell the organizer why you\'re perfect for this event. Include your experience, style, and what makes you unique...'
+            }),
+            'proposed_rate': forms.NumberInput(attrs={
+                'min': '0',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+        }
+        labels = {
+            'cover_letter': 'Why are you perfect for this event?',
+            'proposed_rate': 'Your proposed rate (KSH)',
+            'availability_confirmed': 'I confirm I am available for this event',
+        }
+        help_texts = {
+            'cover_letter': 'Share your relevant experience, musical style, and what you can bring to this event.',
+            'proposed_rate': 'Enter your proposed rate for this event in Kenyan Shillings.',
+            'availability_confirmed': 'Please confirm you are available for the full duration of this event.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.event = kwargs.pop('event', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.event:
+            # Set suggested rate range based on event budget
+            budget_suggestion = f"Event budget: KSH {self.event.budget_min:,.0f} - {self.event.budget_max:,.0f}"
+            self.fields['proposed_rate'].help_text = f"{self.fields['proposed_rate'].help_text} {budget_suggestion}"
+
+    def clean_proposed_rate(self):
+        proposed_rate = self.cleaned_data.get('proposed_rate')
+        if proposed_rate and proposed_rate <= 0:
+            raise ValidationError("Proposed rate must be greater than 0.")
+        return proposed_rate
+
+    def clean_cover_letter(self):
+        cover_letter = self.cleaned_data.get('cover_letter')
+        if len(cover_letter.strip()) < 50:
+            raise ValidationError("Please provide a more detailed cover letter (at least 50 characters).")
+        return cover_letter
 
 class InstrumentListingForm(forms.ModelForm):
     class Meta:

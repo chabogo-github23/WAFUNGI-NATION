@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from .models import (
     User, MusicianProfile, Event, Booking, InstrumentListing, 
-    Genre, Instrument, Review, Notification
+    Genre, Instrument, Review, Notification, EventApplication
 )
 from .forms import (
     UserRegistrationForm, ProfileSetupForm, MusicianProfileForm,
@@ -87,9 +87,16 @@ def dashboard(request):
             client=user
         ).order_by('-created_at')[:5]
         
+        # Get pending applications for organizer's events
+        pending_applications = EventApplication.objects.filter(
+            event__organizer=user,
+            status='pending'
+        ).select_related('musician', 'event').order_by('-applied_at')[:5]
+        
         context.update({
             'my_events': my_events,
             'my_bookings': my_bookings,
+            'pending_applications': pending_applications,
         })
     
     elif user.user_type == 'instrument_owner':
@@ -613,7 +620,7 @@ def my_bookings(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'wafungi/my_bookings.html', {'page_obj': page_obj})
+    return render(request, 'wafungi/my_applications.html', {'page_obj': page_obj})
 
 @login_required
 def booking_detail(request, booking_id):
