@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Status - Booking #{{ booking.id }} - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clock text-warning"></i>
+                        Payment Processing
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <h5>Please complete the payment on your phone</h5>
+                    <p class="text-muted">
+                        We've sent an M-Pesa payment request to your phone. 
+                        Please enter your M-Pesa PIN to complete the transaction.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Transaction ID:</strong> {{ checkout_request_id }}<br>
+                        <strong>Amount:</strong> KSH {{ booking.total_amount|floatformat:0 }}<br>
+                        <strong>Phone:</strong> {{ transaction.phone_number }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>What to do next:</h6>
+                        <ol class="text-left">
+                            <li>Check your phone for the M-Pesa payment prompt</li>
+                            <li>Enter your M-Pesa PIN to authorize the payment</li>
+                            <li>Wait for the confirmation message</li>
+                            <li>You'll be redirected automatically once payment is complete</li>
+                        </ol>
+                    </div>
+                    
+                    <!-- Demo simulation button (remove in production) -->
+                    <div class="alert alert-warning">
+                        <strong>Demo Mode:</strong> Click the button below to simulate payment completion
+                        <form method="post" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="simulate_payment" value="1">
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="fas fa-play"></i> Simulate Payment Completion
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Booking
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-question-circle text-info"></i> Need Help?</h6>
+                    <p class="text-muted mb-2">
+                        If you're having trouble with the payment:
+                    </p>
+                    <ul class="text-muted">
+                        <li>Make sure you have sufficient balance in your M-Pesa account</li>
+                        <li>Check that your phone number is correct</li>
+                        <li>Ensure you have network connectivity</li>
+                        <li>Contact our support team if the issue persists</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh page every 10 seconds to check payment status
+setTimeout(function() {
+    location.reload();
+}, 10000);
+
+// Show loading state
+document.addEventListener('DOMContentLoaded', function() {
+    // You can add JavaScript here to periodically check payment status via AJAX
+    // For now, we'll use the simple page refresh approach
+});
+</script>
+{% endblock %}

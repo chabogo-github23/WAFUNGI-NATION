@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful - WAFUNGI-NATION{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i>
+                        Payment Successful!
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="text-success mb-3">
+                            <i class="fas fa-check-circle fa-4x"></i>
+                        </div>
+                        <h5>Thank you for your payment!</h5>
+                        <p class="text-muted">Your booking has been confirmed and payment processed successfully.</p>
+                    </div>
+                    
+                    <!-- Payment Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Payment Details</h6>
+                            <div class="bg-light p-3 rounded">
+                                <strong>Booking ID:</strong> #{{ booking.id }}<br>
+                                {% if transaction %}
+                                <strong>Transaction ID:</strong> {{ transaction.transaction_id }}<br>
+                                {% endif %}
+                                <strong>Amount Paid:</strong> <span class="text-success">KSH {{ booking.total_amount|floatformat:0 }}</span><br>
+                                <strong>Payment Date:</strong> {{ booking.updated_at|date:"M d, Y H:i" }}<br>
+                                <strong>Status:</strong> <span class="badge badge-success">PAID</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Service Details</h6>
+                            <div class="bg-light p-3 rounded">
+                                {% if booking.instrument_listing %}
+                                    <strong>Service:</strong> Instrument Rental<br>
+                                    <strong>Instrument:</strong> {{ booking.instrument_listing.brand }} {{ booking.instrument_listing.model }}<br>
+                                    <strong>Owner:</strong> {{ booking.instrument_listing.owner.get_full_name|default:booking.instrument_listing.owner.username }}<br>
+                                    <strong>Period:</strong> {{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d, Y" }}
+                                {% else %}
+                                    <strong>Service:</strong> Musician Booking<br>
+                                    <strong>Musician:</strong> {{ booking.musician.get_full_name|default:booking.musician.username }}<br>
+                                    <strong>Date:</strong> {{ booking.start_date|date:"M d, Y" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="text-center">
+                        <a href="{% url 'download_receipt' booking.id %}" class="btn btn-primary btn-lg mr-3">
+                            <i class="fas fa-download"></i> Download Receipt (PDF)
+                        </a>
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> View Booking Details
+                        </a>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Next Steps -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> What's Next?</h6>
+                        <ul class="mb-0">
+                            {% if booking.instrument_listing %}
+                                <li>Contact the instrument owner to arrange pickup/delivery</li>
+                                <li>Keep your receipt for reference</li>
+                                <li>Return the instrument in good condition on the agreed date</li>
+                                <li>You can leave a review after the rental period</li>
+                            {% else %}
+                                <li>The musician will contact you to confirm event details</li>
+                                <li>Keep your receipt for reference</li>
+                                <li>You can leave a review after the performance</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <!-- Contact Information -->
+                    {% if booking.instrument_listing %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>Instrument Owner Contact</h6>
+                                <p class="mb-1"><strong>Name:</strong> {{ booking.instrument_listing.owner.get_full_name|default:booking.instrument_listing.owner.username }}</p>
+                                {% if booking.instrument_listing.owner.phone %}
+                                <p class="mb-1"><strong>Phone:</strong> {{ booking.instrument_listing.owner.phone }}</p>
+                                {% endif %}
+                                <p class="mb-0"><strong>Email:</strong> {{ booking.instrument_listing.owner.email }}</p>
+                            </div>
+                        </div>
+                    {% elif booking.musician %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>Musician Contact</h6>
+                                <p class="mb-1"><strong>Name:</strong> {{ booking.musician.get_full_name|default:booking.musician.username }}</p>
+                                {% if booking.musician.phone %}
+                                <p class="mb-1"><strong>Phone:</strong> {{ booking.musician.phone }}</p>
+                                {% endif %}
+                                <p class="mb-0"><strong>Email:</strong> {{ booking.musician.email }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Additional Actions -->
+            <div class="text-center mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary mr-2">
+                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

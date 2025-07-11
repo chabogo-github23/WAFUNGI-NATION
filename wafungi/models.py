@@ -126,6 +126,29 @@ class EventApplication(models.Model):
     def __str__(self):
         return f"{self.musician.get_full_name() or self.musician.username} - {self.event.title}"
 
+class PaymentTransaction(models.Model):
+    """Model to track M-Pesa payment transactions"""
+    TRANSACTION_STATUS = (
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    )
+    
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name='transactions')
+    checkout_request_id = models.CharField(max_length=100, unique=True)
+    merchant_request_id = models.CharField(max_length=100, blank=True)
+    transaction_id = models.CharField(max_length=100, blank=True)  # M-Pesa receipt number
+    phone_number = models.CharField(max_length=15)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=TRANSACTION_STATUS, default='pending')
+    mpesa_response = models.JSONField(blank=True, null=True)  # Store full M-Pesa response
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Transaction {self.transaction_id or self.checkout_request_id} - {self.status}"
+
 class Booking(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -146,6 +169,22 @@ class Booking(models.Model):
     payment_status = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def get_recipient_phone(self):
+        """Get the phone number of the service provider (musician or instrument owner)"""
+        if self.instrument_listing:
+            return self.instrument_listing.owner.phone
+        elif self.musician:
+            return self.musician.phone
+        return None
+    
+    def get_service_provider(self):
+        """Get the service provider (musician or instrument owner)"""
+        if self.instrument_listing:
+            return self.instrument_listing.owner
+        elif self.musician:
+            return self.musician
+        return None
     
     def __str__(self):
         return f"Booking #{self.id} - {self.status}"
