@@ -10,10 +10,19 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
+
+
+def get_bool_env(var_name, default=False):
+    """Safely get a boolean value from environment variable."""
+    try:
+        return config(var_name, default=default, cast=bool)
+    except ValueError:
+        # If the environment variable has an invalid boolean value, use default
+        return default
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,9 +36,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-p^5k_josl9#k_cq&@1z8^c(zus1=ca07you4n@xygmqqqe10sh'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_bool_env('DEBUG', default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -49,6 +58,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,12 +91,22 @@ WSGI_APPLICATION = 'wafungi_nation.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database configuration
+# Use DATABASE_URL from environment variable (for production/Neon)
+# or fall back to SQLite for local development
+DATABASE_URL = config('DATABASE_URL', default='')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -127,6 +147,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# WhiteNoise configuration for serving static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -139,10 +162,7 @@ AUTH_USER_MODEL = 'wafungi.User'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-PAYMENT_GATEWAY_API_KEY = 'your-payment-gateway-key'
-
 LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'login'
 LOGOUT_REDIRECT_URL = '/'
 
 
@@ -165,11 +185,11 @@ MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
 
 if MPESA_ENVIRONMENT == 'sandbox':
     MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY', default='your_sandbox_key')
-    MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET')
-    MPESA_BUSINESS_SHORT_CODE = config('MPESA_BUSINESS_SHORT_CODE')
-    MPESA_PASSKEY = config('MPESA_PASSKEY')
+    MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET', default='your_sandbox_secret')
+    MPESA_BUSINESS_SHORT_CODE = config('MPESA_BUSINESS_SHORT_CODE', default='174379')
+    MPESA_PASSKEY = config('MPESA_PASSKEY', default='your_sandbox_passkey')
     MPESA_BASE_URL = 'https://sandbox.safaricom.co.ke'
-    NGROK_AUTH_TOKEN = config('NGROK_AUTH_TOKEN')
+    NGROK_AUTH_TOKEN = config('NGROK_AUTH_TOKEN', default='')
 else:
     MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY')
     MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET')
@@ -210,6 +230,3 @@ LOGGING = {
 
 # Create logs directory if it doesn't exist
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
-
-# settings.py
-NGROK_AUTH_TOKEN = "2zcz2ZYYDccTwvsYm9IAYEZGgGC_6Ld8gyHLkYgyBC4UbXrJQ"  # e.g., "2FzA5bC6dE7fG8hI9jK0lM1nO2pQ3rS4tU"
