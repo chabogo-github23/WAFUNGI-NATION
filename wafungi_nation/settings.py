@@ -36,9 +36,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-p^5k_josl9#k_cq&@1z8^c(zus1=ca07you4n@xygmqqqe10sh'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_bool_env('DEBUG', default=False)
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1"
+).split(",")
 
 
 # Application definition
@@ -204,29 +207,49 @@ MPESA_AUTH_URL = f'{MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credenti
 MPESA_STK_PUSH_URL = f'{MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest'
 MPESA_QUERY_URL = f'{MPESA_BASE_URL}/mpesa/stkpushquery/v1/query'
 
-# Logging Configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
+if os.environ.get("VERCEL"):
+    # ✅ Vercel-safe logging (console only)
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+            },
         },
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
+        'loggers': {
+            'wafungi.email_utils': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
         },
-    },
-    'loggers': {
-        'wafungi.email_utils': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': True,
+    }
+else:
+    # ✅ Local logging (file + console)
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'level': 'INFO',
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'logs' / 'django.log',
+            },
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+            },
         },
-    },
-}
+        'loggers': {
+            'wafungi.email_utils': {
+                'handlers': ['file', 'console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+        },
+    }
 
 # Create logs directory if it doesn't exist
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
